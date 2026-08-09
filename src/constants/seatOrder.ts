@@ -19,6 +19,8 @@
 //
 // This is currently a single shared layout for every period. The in-app
 // seat-order editor (separate feature) will make it editable and persisted.
+import type { SeatLayout } from "../types";
+
 export const SHARED_SEAT_ORDER: number[] = [
   32, 26, 20, 14, 8, 2, // seats 1–6   (column C, bottom→top)
   33, 27, 21, 15, 9, 3, // seats 7–12  (column E, bottom→top)
@@ -27,6 +29,12 @@ export const SHARED_SEAT_ORDER: number[] = [
   31, 25, 30, 24, 19, 18, // seats 25–30 (columns B/A, teacher's order)
   13, 7, 12, 6, 1, 0, // seats 31–36 (columns B/A, teacher's order)
 ];
+
+export const DEFAULT_SEAT_LAYOUT: SeatLayout = {
+  rows: 6,
+  cols: 6,
+  seatOrder: SHARED_SEAT_ORDER,
+};
 
 export const SEAT_ORDER_GRID_SIZE = 36;
 

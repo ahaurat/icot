@@ -51,6 +51,16 @@ export interface AppEvent {
   updatedAt: string;
 }
 
+export interface SeatLayout {
+  /** Grid height in cells. */
+  rows: number;
+  /** Grid width in cells. */
+  cols: number;
+  /** Row-major grid indices that are desks, in seat order (seat 1 = seatOrder[0]).
+      Any in-grid cell not listed is an aisle/gap. Entries are unique and < rows*cols. */
+  seatOrder: number[];
+}
+
 export interface Settings {
   /** ISO date (YYYY-MM-DD) marking the start of the tracked school year. */
   schoolYearStart: string;
