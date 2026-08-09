@@ -159,9 +159,12 @@ export function createSupabaseStore(): DataStore {
 
     async importAll(data: AppData) {
       // Replace everything: clear child-to-parent, then insert parent-to-child.
-      await sb.from("events").delete().neq("id", "");
-      await sb.from("students").delete().neq("id", "");
-      await sb.from("classes").delete().neq("id", "");
+      // `id` is a uuid on events/students, so it can't be compared against ""
+      // (Postgres 22P02). Match every row via a null check instead, and surface
+      // failures rather than silently leaving the old rows in place.
+      check((await sb.from("events").delete().not("id", "is", null)).error, "clear events");
+      check((await sb.from("students").delete().not("id", "is", null)).error, "clear students");
+      check((await sb.from("classes").delete().not("id", "is", null)).error, "clear classes");
 
       if (data.classes.length) {
         check((await sb.from("classes").insert(data.classes.map(classToRow))).error, "import classes");

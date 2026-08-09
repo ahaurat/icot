@@ -65,7 +65,7 @@ never lose history.
 ## Enabling Supabase (cloud sync + login)
 
 Local mode is single-device. Cloud mode syncs across devices **and requires a
-login**, so your students' data isn't exposed by the public anon key.
+login**, so your students' data isn't exposed by the public key.
 
 1. **Create a project** at [supabase.com](https://supabase.com) (free tier is fine).
 2. **Run the schema.** In the project's **SQL editor**, paste and run
@@ -74,12 +74,15 @@ login**, so your students' data isn't exposed by the public anon key.
 3. **Create your account.** Go to **Authentication → Users → Add user**, and set
    your email + a password. Then, under **Authentication → Providers → Email**,
    **turn OFF "Allow new users to sign up"** so yours is the only account.
-4. **Get your keys** from **Project Settings → API**: the *Project URL* and the
-   *anon public* key.
+4. **Get your keys** from **Settings → API Keys** (new projects) or
+   **Settings → API** (older projects):
+   - **Project URL** — shown at the top of either page (e.g. `https://xxxx.supabase.co`)
+   - **API key** — use the **Publishable key** (`sb_publishable_...`) on new projects,
+     or the **anon public** key on older ones. Both work identically here.
 5. **Set the env vars** — locally, copy `.env.example` to `.env`:
    ```
    VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-   VITE_SUPABASE_ANON_KEY=YOUR-ANON-KEY
+   VITE_SUPABASE_ANON_KEY=YOUR-PUBLISHABLE-OR-ANON-KEY
    ```
    (In production, set these in your host's env — see below.)
 6. Restart `npm run dev`. You'll get a **sign-in screen**; log in with the account
@@ -90,9 +93,10 @@ login**, so your students' data isn't exposed by the public anon key.
 To move existing local data into Supabase: in Local mode, **Export backup**; after
 enabling Supabase and signing in, **Import backup**.
 
-> The anon key is public (it ships in the bundle) — safe here because RLS blocks
-> everyone except your logged-in account. Keep sign-ups disabled. (For multiple
-> teachers you'd add an `owner_id` column and scope policies to `auth.uid()`.)
+> The publishable key (or anon key) is safe to embed in the client bundle — RLS
+> blocks all access except your signed-in account. Keep sign-ups disabled.
+> (For multiple teachers you'd add an `owner_id` column and scope policies to
+> `auth.uid()`.)
 > Free-tier projects pause after ~1 week of inactivity; open the dashboard to wake
 > one after a school break.
 

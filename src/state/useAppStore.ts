@@ -78,18 +78,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (initStarted) return;
     initStarted = true;
 
-    let data = await store.loadAll();
-    if (data.classes.length === 0) {
-      // Fresh storage: seed with the ported rosters and persist them.
-      data = buildSeedData();
-      await store.importAll(data);
+    try {
+      let data = await store.loadAll();
+      if (data.classes.length === 0) {
+        // Fresh storage: seed with the ported rosters and persist them.
+        data = buildSeedData();
+        await store.importAll(data);
+      }
+      set({
+        ...data,
+        error: null,
+        loaded: true,
+        currentClassId:
+          data.classes.find((c) => !c.archivedAt)?.id ?? data.classes[0]?.id ?? null,
+      });
+    } catch (err) {
+      // Release the latch so the failure can be retried without a reload, and
+      // record the reason — `loaded` stays false, so App shows this instead of
+      // sitting on "Loading…" forever.
+      initStarted = false;
+      console.error("Load error:", err);
+      set({ error: err instanceof Error ? err.message : String(err) });
     }
-    set({
-      ...data,
-      loaded: true,
-      currentClassId:
-        data.classes.find((c) => !c.archivedAt)?.id ?? data.classes[0]?.id ?? null,
-    });
   },
 
   setCurrentClass(classId) {
@@ -284,9 +294,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       currentClassId: newClasses[0]?.id ?? get().currentClassId,
     });
 
-    archived.forEach((c) => persist(store.upsertClass(c)));
-    newClasses.forEach((c) => persist(store.upsertClass(c)));
-    newStudents.forEach((s) => persist(store.upsertStudent(s)));
+    // Students reference their class by FK, so every class row must be written
+    // before any student row. These are separate network calls in cloud mode,
+    // so they must be awaited in order rather than fired off together.
+    persist(
+      (async () => {
+        await Promise.all([...archived, ...newClasses].map((c) => store.upsertClass(c)));
+        await Promise.all(newStudents.map((s) => store.upsertStudent(s)));
+      })(),
+    );
   },
 
   archiveCurrentRosters() {
