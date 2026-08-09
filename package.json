@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "In-Class On-Task — classroom distraction tracker",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
