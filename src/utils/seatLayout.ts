@@ -1,4 +1,4 @@
-import type { SeatLayout } from "../types";
+import type { SeatLayout, Student } from "../types";
 
 /** Number of desks the layout defines. */
 export function deskCount(layout: SeatLayout): number {
@@ -52,4 +52,39 @@ export function normalizeSeatLayout(layout: SeatLayout): SeatLayout {
     }
   }
   return { rows, cols, seatOrder };
+}
+
+/** Toggle a cell's desk membership: remove it if a desk, else append it as the next seat. */
+export function toggleDeskCell(layout: SeatLayout, index: number): SeatLayout {
+  if (index < 0 || index >= layout.rows * layout.cols) return layout;
+  const seatOrder = layout.seatOrder.includes(index)
+    ? layout.seatOrder.filter((i) => i !== index)
+    : [...layout.seatOrder, index];
+  return { ...layout, seatOrder };
+}
+
+/** Resize the grid, dropping any desks that fall outside the new bounds. */
+export function resizeLayout(layout: SeatLayout, rows: number, cols: number): SeatLayout {
+  return normalizeSeatLayout({ ...layout, rows, cols });
+}
+
+/** Remove all desks (every cell becomes an aisle). */
+export function clearOrder(layout: SeatLayout): SeatLayout {
+  return { ...layout, seatOrder: [] };
+}
+
+/**
+ * New seatIndex for each currently-seated student (seatIndex != null), ordered by
+ * their current seatIndex ascending and placed onto the layout's order. Unseated
+ * students are omitted (left unchanged by the caller).
+ */
+export function planReseat(
+  students: Pick<Student, "id" | "seatIndex">[],
+  layout: SeatLayout
+): { id: string; seatIndex: number }[] {
+  const seated = students
+    .filter((s): s is { id: string; seatIndex: number } => s.seatIndex != null)
+    .sort((a, b) => a.seatIndex - b.seatIndex);
+  const placement = placementForLayout(layout, seated.length);
+  return seated.map((s, i) => ({ id: s.id, seatIndex: placement[i] }));
 }

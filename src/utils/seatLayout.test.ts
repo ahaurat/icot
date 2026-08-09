@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
-import { deskCount, isAisleCell, normalizeSeatLayout, placementForLayout } from "./seatLayout";
+import {
+  clearOrder,
+  deskCount,
+  isAisleCell,
+  normalizeSeatLayout,
+  placementForLayout,
+  planReseat,
+  resizeLayout,
+  toggleDeskCell,
+} from "./seatLayout";
 import type { SeatLayout } from "../types";
 
 describe("deskCount", () => {
@@ -52,5 +61,52 @@ describe("normalizeSeatLayout", () => {
       cols: 20,
       seatOrder: [],
     });
+  });
+});
+
+describe("toggleDeskCell", () => {
+  it("appends a blank cell as the next seat", () => {
+    const layout: SeatLayout = { rows: 2, cols: 2, seatOrder: [0] };
+    expect(toggleDeskCell(layout, 3).seatOrder).toEqual([0, 3]);
+  });
+  it("removes a desk and keeps the rest in order (renumbering follows position)", () => {
+    const layout: SeatLayout = { rows: 2, cols: 2, seatOrder: [0, 3, 1] };
+    expect(toggleDeskCell(layout, 3).seatOrder).toEqual([0, 1]);
+  });
+  it("ignores out-of-grid indices", () => {
+    const layout: SeatLayout = { rows: 2, cols: 2, seatOrder: [0] };
+    expect(toggleDeskCell(layout, 9)).toEqual(layout);
+  });
+});
+
+describe("resizeLayout", () => {
+  it("drops desks outside the new bounds", () => {
+    const layout: SeatLayout = { rows: 3, cols: 3, seatOrder: [0, 8, 4] };
+    expect(resizeLayout(layout, 2, 2)).toEqual({ rows: 2, cols: 2, seatOrder: [0] });
+  });
+});
+
+describe("clearOrder", () => {
+  it("removes every desk", () => {
+    const layout: SeatLayout = { rows: 2, cols: 2, seatOrder: [0, 1] };
+    expect(clearOrder(layout)).toEqual({ rows: 2, cols: 2, seatOrder: [] });
+  });
+});
+
+describe("planReseat", () => {
+  it("re-seats currently-seated students by ascending seatIndex, omitting unseated", () => {
+    const layout: SeatLayout = { rows: 6, cols: 6, seatOrder: [32, 26, 20] };
+    const students = [
+      { id: "c", seatIndex: 8 },
+      { id: "a", seatIndex: 2 },
+      { id: "u", seatIndex: null },
+      { id: "b", seatIndex: 5 },
+    ];
+    // sorted by seatIndex: a(2), b(5), c(8) -> placement [32,26,20]
+    expect(planReseat(students, layout)).toEqual([
+      { id: "a", seatIndex: 32 },
+      { id: "b", seatIndex: 26 },
+      { id: "c", seatIndex: 20 },
+    ]);
   });
 });
