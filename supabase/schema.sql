@@ -43,10 +43,12 @@ create table if not exists settings (
   school_year_start date not null
 );
 
--- This is a single-teacher app that talks to Supabase with the public anon key,
--- so we use permissive policies. (Anyone with the anon key can read/write — fine
--- for a personal classroom tool. Add Supabase Auth + per-user policies if you
--- ever need multi-user isolation.)
+-- Security: the anon key is PUBLIC (it ships in the client bundle), so access is
+-- controlled by Row Level Security. Only SIGNED-IN users can read/write; the
+-- public (anon) role gets nothing. Because this is a single-teacher app, any
+-- authenticated user has full access — keep public sign-ups DISABLED in
+-- Authentication → Providers so only your one account exists. (For multi-teacher
+-- use you'd add an owner_id column and scope policies to auth.uid().)
 alter table classes  enable row level security;
 alter table students enable row level security;
 alter table events   enable row level security;
@@ -56,9 +58,12 @@ do $$
 declare t text;
 begin
   foreach t in array array['classes', 'students', 'events', 'settings'] loop
+    -- Remove any earlier permissive anon policy.
     execute format('drop policy if exists "anon all" on %I;', t);
+    execute format('drop policy if exists "authenticated all" on %I;', t);
     execute format(
-      'create policy "anon all" on %I for all to anon using (true) with check (true);', t
+      'create policy "authenticated all" on %I for all to authenticated using (true) with check (true);',
+      t
     );
   end loop;
 end $$;

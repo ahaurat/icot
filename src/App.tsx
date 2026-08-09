@@ -1,12 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAppStore } from "./state/useAppStore";
+import { useAuth } from "./state/useAuth";
 import Header from "./components/Header";
 import SeatingChart from "./components/SeatingChart";
 import StudentModal from "./components/StudentModal";
 import SettingsModal from "./components/SettingsModal";
 import SummaryModal from "./components/SummaryModal";
+import LoginScreen from "./components/LoginScreen";
+
+function Centered({ children }: { children: ReactNode }) {
+  return <div className="flex h-full items-center justify-center text-gray-500">{children}</div>;
+}
 
 export default function App() {
+  const { ready, authed } = useAuth();
+
+  if (!ready) return <Centered>Loading…</Centered>;
+  if (!authed) return <LoginScreen />;
+  return <MainApp />;
+}
+
+function MainApp() {
   const init = useAppStore((s) => s.init);
   const loaded = useAppStore((s) => s.loaded);
   const error = useAppStore((s) => s.error);
@@ -20,13 +34,7 @@ export default function App() {
     void init();
   }, [init]);
 
-  if (!loaded) {
-    return (
-      <div className="flex h-full items-center justify-center text-gray-500">
-        Loading…
-      </div>
-    );
-  }
+  if (!loaded) return <Centered>Loading…</Centered>;
 
   return (
     <div className="mx-auto max-w-5xl p-4">

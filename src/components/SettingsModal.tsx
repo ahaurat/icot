@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { AppData } from "../types";
 import { useAppStore } from "../state/useAppStore";
+import { signOut, useAuth } from "../state/useAuth";
 import { storageMode } from "../data/store";
 import { todayDateKey } from "../utils/time";
 import Modal from "./Modal";
@@ -8,6 +9,7 @@ import RosterManager from "./RosterManager";
 import RosterUploadModal from "./RosterUploadModal";
 
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
+  const { email } = useAuth();
   const classes = useAppStore((s) => s.classes);
   const students = useAppStore((s) => s.students);
   const currentClassId = useAppStore((s) => s.currentClassId);
@@ -203,6 +205,23 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             />
           </div>
         </section>
+
+        {/* Account (cloud mode only) */}
+        {storageMode === "supabase" && (
+          <section>
+            <h3 className="mb-1 text-sm font-semibold text-gray-700">Account</h3>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{email ?? "Signed in"}</span>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="rounded border px-3 py-2 text-sm"
+              >
+                Sign out
+              </button>
+            </div>
+          </section>
+        )}
       </div>
 
       {uploadOpen && <RosterUploadModal onClose={() => setUploadOpen(false)} />}

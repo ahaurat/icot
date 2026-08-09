@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ICOT">
+  <rect width="512" height="512" fill="#4f46e5"/>
+  <!-- 3x3 grid of desks; one seat highlighted (on-task) -->
+  <g>
+    <rect x="128" y="128" width="68" height="68" rx="14" fill="#ffffff"/>
+    <rect x="222" y="128" width="68" height="68" rx="14" fill="#ffffff"/>
+    <rect x="316" y="128" width="68" height="68" rx="14" fill="#ffffff"/>
+    <rect x="128" y="222" width="68" height="68" rx="14" fill="#ffffff"/>
+    <rect x="222" y="222" width="68" height="68" rx="14" fill="#22c55e"/>
+    <rect x="316" y="222" width="68" height="68" rx="14" fill="#ffffff"/>
+    <rect x="128" y="316" width="68" height="68" rx="14" fill="#ffffff"/>
+    <rect x="222" y="316" width="68" height="68" rx="14" fill="#ffffff"/>
+    <rect x="316" y="316" width="68" height="68" rx="14" fill="#ffffff"/>
+  </g>
+</svg>

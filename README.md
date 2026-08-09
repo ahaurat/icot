@@ -62,26 +62,65 @@ npm run typecheck  # tsc only
 Stable student IDs back all of this: moving seats, renaming, and removing students
 never lose history.
 
-## Enabling Supabase (cloud sync)
+## Enabling Supabase (cloud sync + login)
 
-Local mode is single-device. To sync across devices:
+Local mode is single-device. Cloud mode syncs across devices **and requires a
+login**, so your students' data isn't exposed by the public anon key.
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. In the **SQL editor**, run [`supabase/schema.sql`](supabase/schema.sql).
-3. Copy `.env.example` to `.env` and set:
+1. **Create a project** at [supabase.com](https://supabase.com) (free tier is fine).
+2. **Run the schema.** In the project's **SQL editor**, paste and run
+   [`supabase/schema.sql`](supabase/schema.sql). This creates the tables and locks
+   Row Level Security so only signed-in users can read/write.
+3. **Create your account.** Go to **Authentication → Users → Add user**, and set
+   your email + a password. Then, under **Authentication → Providers → Email**,
+   **turn OFF "Allow new users to sign up"** so yours is the only account.
+4. **Get your keys** from **Project Settings → API**: the *Project URL* and the
+   *anon public* key.
+5. **Set the env vars** — locally, copy `.env.example` to `.env`:
    ```
    VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
    VITE_SUPABASE_ANON_KEY=YOUR-ANON-KEY
    ```
-4. Restart `npm run dev`. The header badge switches from **💾 Local** to
-   **☁ Cloud**. On first run with empty tables, the rosters are seeded
-   automatically.
+   (In production, set these in your host's env — see below.)
+6. Restart `npm run dev`. You'll get a **sign-in screen**; log in with the account
+   from step 3. The header badge switches from **💾 Local** to **☁ Cloud**, and on
+   first run with empty tables the demo data is seeded. Sign out from **Settings →
+   Account**.
 
-To move your existing local data into Supabase: in Local mode, **Export backup**;
-then after enabling Supabase, **Import backup**.
+To move existing local data into Supabase: in Local mode, **Export backup**; after
+enabling Supabase and signing in, **Import backup**.
 
-> The app uses the public anon key with permissive row-level policies — fine for a
-> single-teacher tool. Add Supabase Auth + per-user policies for multi-user setups.
+> The anon key is public (it ships in the bundle) — safe here because RLS blocks
+> everyone except your logged-in account. Keep sign-ups disabled. (For multiple
+> teachers you'd add an `owner_id` column and scope policies to `auth.uid()`.)
+> Free-tier projects pause after ~1 week of inactivity; open the dashboard to wake
+> one after a school break.
+
+## Deploy to production (Vercel)
+
+The app is a static SPA — any static host works; these steps use **Vercel**.
+
+1. Push to GitHub (already done for this repo).
+2. On [vercel.com](https://vercel.com), **Add New → Project** and import the repo.
+   Vercel auto-detects Vite (build `npm run build`, output `dist`).
+3. Under **Settings → Environment Variables**, add `VITE_SUPABASE_URL` and
+   `VITE_SUPABASE_ANON_KEY` (same values as your `.env`). These are build-time
+   values, so **redeploy** after adding them.
+4. Deploy. Every push to `main` auto-deploys. Add a custom domain under
+   **Settings → Domains** if you like (free, includes HTTPS).
+
+> Netlify and Cloudflare Pages work identically (same build/output, same env vars).
+
+## Install as an app (PWA)
+
+The app is a PWA — installable and full-screen, no browser chrome:
+
+- **Desktop Chrome/Edge:** click the install icon in the address bar (or ⋮ → *Install ICOT*).
+- **iOS Safari:** Share → *Add to Home Screen*. Launches full-screen.
+- **Android Chrome:** ⋮ → *Install app* / *Add to Home Screen*.
+
+Icons are generated from [`public/icon.svg`](public/icon.svg) via
+`node scripts/generate-icons.mjs` (re-run if you change the icon).
 
 ## Project structure
 
