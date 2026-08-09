@@ -1,6 +1,6 @@
 import type { AppData, AppEvent, ClassRoom, SeatLayout, Settings, Student } from "../types";
 import type { DataStore } from "./store";
-import { emptyData, withSettingsDefaults } from "./store";
+import { withSettingsDefaults } from "./store";
 import { getSupabaseClient } from "./supabaseClient";
 
 // Row shapes (snake_case) as stored in Supabase. See supabase/schema.sql.
