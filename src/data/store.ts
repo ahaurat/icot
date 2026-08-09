@@ -1,8 +1,18 @@
 import type { AppData, AppEvent, ClassRoom, Settings, Student } from "../types";
 import { defaultSchoolYearStart } from "../utils/time";
+import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
+import { normalizeSeatLayout } from "../utils/seatLayout";
 import { createLocalStore } from "./localStore";
 import { createSupabaseStore } from "./supabaseStore";
 import { hasSupabaseConfig } from "./supabaseClient";
+
+/** Fill in defaults for any settings shape read from storage, an import, or a fresh install. */
+export function withSettingsDefaults(s: Partial<Settings> | null | undefined): Settings {
+  return {
+    schoolYearStart: s?.schoolYearStart || defaultSchoolYearStart(),
+    seatLayout: s?.seatLayout ? normalizeSeatLayout(s.seatLayout) : DEFAULT_SEAT_LAYOUT,
+  };
+}
 
 /**
  * Persistence contract. Implemented by both the localStorage adapter (default)
@@ -27,7 +37,7 @@ export function emptyData(): AppData {
     classes: [],
     students: [],
     events: [],
-    settings: { schoolYearStart: defaultSchoolYearStart() },
+    settings: withSettingsDefaults(null),
   };
 }
 

@@ -1,7 +1,7 @@
 import type { AppData, ClassRoom, Student } from "../types";
 import { seatIndexForPosition } from "../constants/seatOrder";
 import { newId } from "../utils/id";
-import { defaultSchoolYearStart } from "../utils/time";
+import { withSettingsDefaults } from "./store";
 
 // A small, entirely fictional demo class so the app looks alive on first run.
 // Teachers replace this with their own students via Settings → Roster upload
@@ -42,6 +42,6 @@ export function buildSeedData(): AppData {
     classes,
     students,
     events: [],
-    settings: { schoolYearStart: defaultSchoolYearStart() },
+    settings: withSettingsDefaults(null),
   };
 }

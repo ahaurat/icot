@@ -64,6 +64,8 @@ export interface SeatLayout {
 export interface Settings {
   /** ISO date (YYYY-MM-DD) marking the start of the tracked school year. */
   schoolYearStart: string;
+  /** Shared seating layout used by roster upload and the seating chart. */
+  seatLayout: SeatLayout;
 }
 
 export interface AppData {

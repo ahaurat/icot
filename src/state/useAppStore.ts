@@ -10,7 +10,7 @@ import { CATEGORY_BY_KEY } from "../constants/categories";
 import { SEAT_ORDER_GRID_SIZE, seatIndexForPosition } from "../constants/seatOrder";
 import { buildSeedData } from "../data/seed";
 import type { ParsedRoster } from "../data/rosterImport";
-import { getDataStore } from "../data/store";
+import { getDataStore, withSettingsDefaults } from "../data/store";
 import { newId } from "../utils/id";
 import { elapsedSeconds } from "../utils/time";
 
@@ -332,14 +332,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   importData(data) {
+    const settings = withSettingsDefaults(data.settings);
+    const coerced = { ...data, settings };
     set({
-      classes: data.classes,
-      students: data.students,
-      events: data.events,
-      settings: data.settings,
-      currentClassId: data.classes[0]?.id ?? null,
+      classes: coerced.classes,
+      students: coerced.students,
+      events: coerced.events,
+      settings,
+      currentClassId:
+        coerced.classes.find((c) => !c.archivedAt)?.id ?? coerced.classes[0]?.id ?? null,
     });
-    persist(store.importAll(data));
+    persist(store.importAll(coerced));
   },
 
   exportData() {
