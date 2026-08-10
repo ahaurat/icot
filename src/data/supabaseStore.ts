@@ -177,9 +177,12 @@ export function createSupabaseStore(): DataStore {
 
     async importAll(data: AppData) {
       // Replace everything: clear child-to-parent, then insert parent-to-child.
-      await sb.from("events").delete().neq("id", "");
-      await sb.from("students").delete().neq("id", "");
-      await sb.from("classes").delete().neq("id", "");
+      // Deletes are RLS-scoped to the current owner. `.not("id","is",null)` is an
+      // always-true filter (PostgREST requires a filter on delete) that works for
+      // the uuid id columns — unlike `.neq("id","")`, which fails uuid coercion.
+      check((await sb.from("events").delete().not("id", "is", null)).error, "clear events");
+      check((await sb.from("students").delete().not("id", "is", null)).error, "clear students");
+      check((await sb.from("classes").delete().not("id", "is", null)).error, "clear classes");
 
       if (data.classes.length) {
         check((await sb.from("classes").insert(data.classes.map(classToRow))).error, "import classes");

@@ -38,6 +38,7 @@ export default function LoginScreen() {
     setMode(next);
     setError(null);
     setConfirmSent(false);
+    setPassword("");
   }
 
   if (confirmSent) {
@@ -128,6 +129,7 @@ export default function LoginScreen() {
               Already have an account?{" "}
               <button
                 type="button"
+                disabled={busy}
                 className="font-medium text-blue-600 underline"
                 onClick={() => switchMode("signin")}
               >
@@ -139,6 +141,7 @@ export default function LoginScreen() {
               New here?{" "}
               <button
                 type="button"
+                disabled={busy}
                 className="font-medium text-blue-600 underline"
                 onClick={() => switchMode("signup")}
               >

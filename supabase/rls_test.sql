@@ -52,6 +52,8 @@ begin
   assert (select count(*) from events)   = 1, 'B should see exactly 1 event';
   assert (select count(*) from settings) = 1, 'B should see exactly 1 settings row';
   assert (select name from classes) = 'B Science', 'B should see only B''s class';
+  assert (select name from students) = 'Bob', 'B should see only B''s student';
+  assert (select category_key from events) = 'cellphone', 'B should see only B''s event';
   assert (select school_year_start from settings) = date '2025-09-01',
          'B should see only B''s settings';
 end $$;
@@ -72,8 +74,8 @@ begin
     insert into classes (id, owner_id, name)
       values ('b9999999-9999-9999-9999-999999999999',
               '11111111-1111-1111-1111-111111111111', 'Spoofed');
-  exception when others then
-    rejected := true;  -- expected: RLS with-check violation
+  exception when insufficient_privilege then
+    rejected := true;  -- expected: RLS with check violation (SQLSTATE 42501)
   end;
   assert rejected, 'with check must block inserting a row owned by another user';
 end $$;
@@ -93,6 +95,8 @@ begin
   assert (select name from classes) = 'A Math', 'A should see only A''s class';
   assert (select count(*) from students) = 1, 'A should see exactly 1 student';
   assert (select count(*) from events)   = 1, 'A should see exactly 1 event';
+  assert (select name from students) = 'Alice', 'A should see only A''s student';
+  assert (select category_key from events) = 'bathroom', 'A should see only A''s event';
   assert (select school_year_start from settings) = date '2026-08-01',
          'A should see only A''s settings';
 end $$;

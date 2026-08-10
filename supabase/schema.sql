@@ -88,6 +88,9 @@ end $$;
 -- instead of relying on the fresh CREATEs above. Get <YOUR-UID> from
 -- Authentication -> Users.
 --
+--   -- 0. (Only if upgrading a DB old enough to predate the archive feature.)
+--   alter table classes add column if not exists archived_at timestamptz;
+--
 --   -- 1. Add + backfill + lock owner_id on the data tables.
 --   alter table classes  add column if not exists owner_id uuid;
 --   alter table students add column if not exists owner_id uuid;
