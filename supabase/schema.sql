@@ -1,21 +1,26 @@
--- ICOT Supabase schema.
--- Run this once in the Supabase SQL editor to enable cloud sync, then set
+-- ICOT Supabase schema (multi-teacher).
+-- Run once in the Supabase SQL editor to enable cloud sync, then set
 -- VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.
+--
+-- Multi-teacher model: every row is owned by the teacher who created it
+-- (owner_id = auth.uid()) and Row Level Security scopes all access to the
+-- owner, so teachers never see each other's data. Teachers self-register
+-- (Authentication -> Providers -> Email: allow sign-ups + confirm email).
+-- See README "Enabling Supabase".
 
 create table if not exists classes (
-  id          text primary key,
+  id          uuid primary key,
+  owner_id    uuid not null default auth.uid(),
   name        text not null,
   seat_rows   int  not null default 6,
   seat_cols   int  not null default 6,
   archived_at timestamptz
 );
 
--- If upgrading an existing database, add the archive column:
-alter table classes add column if not exists archived_at timestamptz;
-
 create table if not exists students (
   id         uuid primary key,
-  class_id   text not null references classes(id) on delete cascade,
+  owner_id   uuid not null default auth.uid(),
+  class_id   uuid not null references classes(id) on delete cascade,
   name       text not null,
   seat_index int,
   active     boolean not null default true
@@ -23,8 +28,9 @@ create table if not exists students (
 
 create table if not exists events (
   id               uuid primary key,
+  owner_id         uuid not null default auth.uid(),
   student_id       uuid not null references students(id) on delete cascade,
-  class_id         text not null,
+  class_id         uuid not null,
   category_key     text not null,
   type             text not null,
   started_at       timestamptz not null,
@@ -35,20 +41,24 @@ create table if not exists events (
   updated_at       timestamptz not null default now()
 );
 
-create index if not exists events_student_idx on events (student_id);
-create index if not exists events_class_idx   on events (class_id);
-
 create table if not exists settings (
-  id                text primary key default 'app',
+  owner_id          uuid primary key default auth.uid(),
   school_year_start date not null
 );
 
+create index if not exists classes_owner_idx  on classes  (owner_id);
+create index if not exists students_owner_idx on students (owner_id);
+create index if not exists students_class_idx on students (class_id);
+create index if not exists events_owner_idx   on events   (owner_id);
+create index if not exists events_student_idx on events   (student_id);
+create index if not exists events_class_idx   on events   (class_id);
+
 -- Security: the anon key is PUBLIC (it ships in the client bundle), so access is
--- controlled by Row Level Security. Only SIGNED-IN users can read/write; the
--- public (anon) role gets nothing. Because this is a single-teacher app, any
--- authenticated user has full access — keep public sign-ups DISABLED in
--- Authentication → Providers so only your one account exists. (For multi-teacher
--- use you'd add an owner_id column and scope policies to auth.uid().)
+-- controlled by Row Level Security. Each authenticated teacher can read/write
+-- ONLY the rows they own (owner_id = auth.uid()); the anon role gets nothing.
+-- owner_id defaults to auth.uid() on insert, so the client never sends it.
+-- Self-service sign-up is expected; the "owner all" policy keeps teachers
+-- isolated from one another.
 alter table classes  enable row level security;
 alter table students enable row level security;
 alter table events   enable row level security;
@@ -57,13 +67,54 @@ alter table settings enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['classes', 'students', 'events', 'settings'] loop
-    -- Remove any earlier permissive anon policy.
+  foreach t in array array['classes','students','events','settings'] loop
+    -- Remove earlier single-tenant / anon policies if present.
     execute format('drop policy if exists "anon all" on %I;', t);
     execute format('drop policy if exists "authenticated all" on %I;', t);
+    execute format('drop policy if exists "owner all" on %I;', t);
     execute format(
-      'create policy "authenticated all" on %I for all to authenticated using (true) with check (true);',
+      'create policy "owner all" on %I for all to authenticated '
+      || 'using (owner_id = auth.uid()) with check (owner_id = auth.uid());',
       t
     );
   end loop;
 end $$;
+
+-- ----------------------------------------------------------------------------
+-- UPGRADING an existing single-tenant database?  (Skip for a fresh DB.)
+--
+-- If you already have single-tenant tables (text ids, a single settings row
+-- id='app', "authenticated all" policy) with real data, run these steps ONCE
+-- instead of relying on the fresh CREATEs above. Get <YOUR-UID> from
+-- Authentication -> Users.
+--
+--   -- 1. Add + backfill + lock owner_id on the data tables.
+--   alter table classes  add column if not exists owner_id uuid;
+--   alter table students add column if not exists owner_id uuid;
+--   alter table events   add column if not exists owner_id uuid;
+--   update classes  set owner_id = '<YOUR-UID>' where owner_id is null;
+--   update students set owner_id = '<YOUR-UID>' where owner_id is null;
+--   update events   set owner_id = '<YOUR-UID>' where owner_id is null;
+--   alter table classes  alter column owner_id set not null,
+--                        alter column owner_id set default auth.uid();
+--   alter table students alter column owner_id set not null,
+--                        alter column owner_id set default auth.uid();
+--   alter table events   alter column owner_id set not null,
+--                        alter column owner_id set default auth.uid();
+--
+--   -- 2. Move settings to one row per owner (old table had a single id='app').
+--   alter table settings add column if not exists owner_id uuid;
+--   update settings set owner_id = '<YOUR-UID>' where owner_id is null;
+--   alter table settings drop constraint settings_pkey;
+--   alter table settings drop column if exists id;
+--   alter table settings add primary key (owner_id);
+--   alter table settings alter column owner_id set default auth.uid();
+--
+--   -- 3. Convert text ids to uuid (ONLY if existing ids are valid UUID
+--   --    strings; slug ids like 'period-1' must be remapped first).
+--   alter table events   alter column class_id type uuid using class_id::uuid;
+--   alter table students alter column class_id type uuid using class_id::uuid;
+--   alter table classes  alter column id       type uuid using id::uuid;
+--
+--   -- 4. Re-run the "owner all" policy block above.
+-- ----------------------------------------------------------------------------
