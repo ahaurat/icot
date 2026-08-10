@@ -1,21 +1,68 @@
 import { useState, type FormEvent } from "react";
 import { getSupabaseClient } from "../data/supabaseClient";
 
+type Mode = "signin" | "signup";
+
 export default function LoginScreen() {
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmSent, setConfirmSent] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
-    // On success, useAuth's onAuthStateChange swaps in the app.
+    const sb = getSupabaseClient();
+
+    if (mode === "signup") {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) {
+        setError(error.message);
+      } else if (!data.session) {
+        // Email confirmation is on: no session until the emailed link is clicked.
+        setConfirmSent(true);
+      }
+      // If a session exists (confirmation disabled), useAuth swaps in the app.
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+      // On success, useAuth's onAuthStateChange swaps in the app.
+    }
     setBusy(false);
   }
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError(null);
+    setConfirmSent(false);
+  }
+
+  if (confirmSent) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-gray-100 p-4">
+        <div className="w-full max-w-sm space-y-4 rounded-lg bg-white p-6 shadow">
+          <h1 className="text-2xl font-bold">Check your email</h1>
+          <p className="text-sm text-gray-600">
+            We sent a confirmation link to{" "}
+            <span className="font-medium">{email}</span>. Click it to activate your
+            account, then sign in.
+          </p>
+          <button
+            type="button"
+            onClick={() => switchMode("signin")}
+            className="w-full rounded bg-blue-500 px-4 py-2 text-white"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isSignup = mode === "signup";
 
   return (
     <div className="flex min-h-full items-center justify-center bg-gray-100 p-4">
@@ -25,7 +72,9 @@ export default function LoginScreen() {
       >
         <div>
           <h1 className="text-2xl font-bold">ICOT</h1>
-          <p className="text-sm text-gray-500">Sign in to continue.</p>
+          <p className="text-sm text-gray-500">
+            {isSignup ? "Create your teacher account." : "Sign in to continue."}
+          </p>
         </div>
 
         <label className="block">
@@ -45,7 +94,8 @@ export default function LoginScreen() {
           <input
             type="password"
             required
-            autoComplete="current-password"
+            minLength={6}
+            autoComplete={isSignup ? "new-password" : "current-password"}
             className="mt-1 w-full rounded border p-2"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -63,8 +113,40 @@ export default function LoginScreen() {
           disabled={busy}
           className="w-full rounded bg-blue-500 px-4 py-2 text-white disabled:opacity-60"
         >
-          {busy ? "Signing in…" : "Sign in"}
+          {busy
+            ? isSignup
+              ? "Creating account…"
+              : "Signing in…"
+            : isSignup
+              ? "Sign up"
+              : "Sign in"}
         </button>
+
+        <p className="text-center text-sm text-gray-600">
+          {isSignup ? (
+            <>
+              Already have an account?{" "}
+              <button
+                type="button"
+                className="font-medium text-blue-600 underline"
+                onClick={() => switchMode("signin")}
+              >
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              New here?{" "}
+              <button
+                type="button"
+                className="font-medium text-blue-600 underline"
+                onClick={() => switchMode("signup")}
+              >
+                Create an account
+              </button>
+            </>
+          )}
+        </p>
       </form>
     </div>
   );
