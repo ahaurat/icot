@@ -1,0 +1,23 @@
+import { describe, expect, it } from "vitest";
+import { withSettingsDefaults } from "./store";
+import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
+
+describe("withSettingsDefaults", () => {
+  it("supplies the default layout when none is stored", () => {
+    const s = withSettingsDefaults({ schoolYearStart: "2025-08-01" });
+    expect(s.schoolYearStart).toBe("2025-08-01");
+    expect(s.seatLayout).toEqual(DEFAULT_SEAT_LAYOUT);
+  });
+  it("supplies defaults for null input", () => {
+    const s = withSettingsDefaults(null);
+    expect(s.seatLayout).toEqual(DEFAULT_SEAT_LAYOUT);
+    expect(typeof s.schoolYearStart).toBe("string");
+  });
+  it("normalizes a provided layout", () => {
+    const s = withSettingsDefaults({
+      schoolYearStart: "2025-08-01",
+      seatLayout: { rows: 6, cols: 6, seatOrder: [0, 0, 99] },
+    });
+    expect(s.seatLayout).toEqual({ rows: 6, cols: 6, seatOrder: [0] });
+  });
+});

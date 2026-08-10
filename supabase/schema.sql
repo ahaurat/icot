@@ -40,8 +40,12 @@ create index if not exists events_class_idx   on events (class_id);
 
 create table if not exists settings (
   id                text primary key default 'app',
-  school_year_start date not null
+  school_year_start date not null,
+  seat_layout       jsonb
 );
+
+-- If upgrading an existing database, add the layout column:
+alter table settings add column if not exists seat_layout jsonb;
 
 -- Security: the anon key is PUBLIC (it ships in the client bundle), so access is
 -- controlled by Row Level Security. Only SIGNED-IN users can read/write; the

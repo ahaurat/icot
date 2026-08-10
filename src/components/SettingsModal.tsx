@@ -7,6 +7,7 @@ import { todayDateKey } from "../utils/time";
 import Modal from "./Modal";
 import RosterManager from "./RosterManager";
 import RosterUploadModal from "./RosterUploadModal";
+import SeatLayoutModal from "./SeatLayoutModal";
 
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const { email } = useAuth();
@@ -27,6 +28,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
   const [rosterClassId, setRosterClassId] = useState(currentClassId ?? activeClasses[0]?.id ?? "");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [layoutOpen, setLayoutOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Keep the roster selector valid if the selected class was archived/replaced.
@@ -93,6 +95,22 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             className="rounded bg-blue-500 px-4 py-2 text-sm text-white"
           >
             Upload rosters…
+          </button>
+        </section>
+
+        {/* Seating layout */}
+        <section>
+          <h3 className="mb-1 text-sm font-semibold text-gray-700">Seating layout</h3>
+          <p className="mb-2 text-xs text-gray-500">
+            Define your room's grid, seat order, and aisles. Used by roster upload and the
+            seating chart.
+          </p>
+          <button
+            type="button"
+            onClick={() => setLayoutOpen(true)}
+            className="rounded bg-blue-500 px-4 py-2 text-sm text-white"
+          >
+            Edit seating layout…
           </button>
         </section>
 
@@ -225,6 +243,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       </div>
 
       {uploadOpen && <RosterUploadModal onClose={() => setUploadOpen(false)} />}
+      {layoutOpen && <SeatLayoutModal onClose={() => setLayoutOpen(false)} />}
     </Modal>
   );
 }

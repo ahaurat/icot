@@ -4,13 +4,15 @@ import type {
   AppEvent,
   CategoryKey,
   ClassRoom,
+  SeatLayout,
   Student,
 } from "../types";
 import { CATEGORY_BY_KEY } from "../constants/categories";
-import { SEAT_ORDER_GRID_SIZE, seatIndexForPosition } from "../constants/seatOrder";
+import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
+import { normalizeSeatLayout, placementForLayout, planReseat } from "../utils/seatLayout";
 import { buildSeedData } from "../data/seed";
 import type { ParsedRoster } from "../data/rosterImport";
-import { getDataStore } from "../data/store";
+import { getDataStore, withSettingsDefaults } from "../data/store";
 import { newId } from "../utils/id";
 import { elapsedSeconds } from "../utils/time";
 
@@ -57,6 +59,10 @@ interface AppState extends AppData {
   restoreClass: (id: string) => void;
   deleteClassPermanently: (id: string) => void;
 
+  // Seat layout
+  setSeatLayout: (layout: SeatLayout) => void;
+  reseatActiveClasses: () => void;
+
   // Settings + data
   setSchoolYearStart: (date: string) => void;
   importData: (data: AppData) => void;
@@ -69,7 +75,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   classes: [],
   students: [],
   events: [],
-  settings: { schoolYearStart: "" },
+  settings: { schoolYearStart: "", seatLayout: DEFAULT_SEAT_LAYOUT },
   loaded: false,
   error: null,
   currentClassId: null,
@@ -252,6 +258,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   importRosters(rosters, archiveFirst) {
     const ts = nowIso();
+    const layout = get().settings.seatLayout;
 
     // Optionally archive (soft-delete) all currently-active classes first.
     const archived: ClassRoom[] = [];
@@ -264,17 +271,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       return c;
     });
 
-    // Build the new active classes + their students placed by the seat order.
+    // Build the new active classes + their students placed by the stored layout.
     const newClasses: ClassRoom[] = [];
     const newStudents: Student[] = [];
     for (const roster of rosters) {
       const classId = newId();
-      const neededSeats = Math.max(SEAT_ORDER_GRID_SIZE, roster.names.length);
+      const placement = placementForLayout(layout, roster.names.length);
+      const maxIndex = placement.reduce((m, i) => Math.max(m, i), -1);
+      const seatRows = Math.max(layout.rows, Math.ceil((maxIndex + 1) / layout.cols));
       newClasses.push({
         id: classId,
         name: roster.period,
-        seatRows: Math.max(6, Math.ceil(neededSeats / 6)),
-        seatCols: 6,
+        seatRows,
+        seatCols: layout.cols,
         archivedAt: null,
       });
       roster.names.forEach((name, i) => {
@@ -282,7 +291,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           id: newId(),
           classId,
           name,
-          seatIndex: seatIndexForPosition(i),
+          seatIndex: placement[i],
           active: true,
         });
       });
@@ -341,6 +350,38 @@ export const useAppStore = create<AppState>((set, get) => ({
     persist(store.deleteClass(id));
   },
 
+  setSeatLayout(layout) {
+    const settings = { ...get().settings, seatLayout: normalizeSeatLayout(layout) };
+    set({ settings });
+    persist(store.saveSettings(settings));
+  },
+
+  reseatActiveClasses() {
+    const layout = get().settings.seatLayout;
+    const changedClasses: ClassRoom[] = [];
+    const changedStudents: Student[] = [];
+
+    for (const cls of get().classes.filter((c) => !c.archivedAt)) {
+      const roster = get().students.filter((s) => s.classId === cls.id && s.active);
+      const plan = planReseat(roster, layout);
+      const byId = new Map(plan.map((p) => [p.id, p.seatIndex]));
+      const maxIndex = plan.reduce((m, p) => Math.max(m, p.seatIndex), -1);
+      const seatRows = Math.max(layout.rows, Math.ceil((maxIndex + 1) / layout.cols));
+
+      changedClasses.push({ ...cls, seatCols: layout.cols, seatRows });
+      for (const s of roster) {
+        if (byId.has(s.id)) changedStudents.push({ ...s, seatIndex: byId.get(s.id)! });
+      }
+    }
+
+    set((state) => ({
+      classes: state.classes.map((c) => changedClasses.find((u) => u.id === c.id) ?? c),
+      students: state.students.map((s) => changedStudents.find((u) => u.id === s.id) ?? s),
+    }));
+    changedClasses.forEach((c) => persist(store.upsertClass(c)));
+    changedStudents.forEach((s) => persist(store.upsertStudent(s)));
+  },
+
   setSchoolYearStart(date) {
     const settings = { ...get().settings, schoolYearStart: date };
     set({ settings });
@@ -348,14 +389,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   importData(data) {
+    const settings = withSettingsDefaults(data.settings);
+    const coerced = { ...data, settings };
     set({
-      classes: data.classes,
-      students: data.students,
-      events: data.events,
-      settings: data.settings,
-      currentClassId: data.classes[0]?.id ?? null,
+      classes: coerced.classes,
+      students: coerced.students,
+      events: coerced.events,
+      settings,
+      currentClassId:
+        coerced.classes.find((c) => !c.archivedAt)?.id ?? coerced.classes[0]?.id ?? null,
     });
-    persist(store.importAll(data));
+    persist(store.importAll(coerced));
   },
 
   exportData() {
