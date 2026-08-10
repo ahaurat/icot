@@ -97,13 +97,30 @@ function check(error: { message: string } | null, context: string) {
 export function createSupabaseStore(): DataStore {
   const sb = getSupabaseClient();
 
+  // The current teacher's auth uid, resolved once and reused. Needed only so the
+  // per-owner settings row can be upserted with an explicit conflict target;
+  // all other tables get owner_id from the DB default and are scoped by RLS.
+  let ownerIdPromise: Promise<string> | null = null;
+  function ownerId(): Promise<string> {
+    if (!ownerIdPromise) {
+      ownerIdPromise = sb.auth.getUser().then(({ data, error }) => {
+        if (error || !data.user) {
+          ownerIdPromise = null; // allow a retry after re-auth
+          throw new Error(`Supabase get user failed: ${error?.message ?? "no session"}`);
+        }
+        return data.user.id;
+      });
+    }
+    return ownerIdPromise;
+  }
+
   return {
     async loadAll() {
       const [classes, students, events, settings] = await Promise.all([
         sb.from("classes").select("*"),
         sb.from("students").select("*"),
         sb.from("events").select("*"),
-        sb.from("settings").select("*").eq("id", "app").maybeSingle(),
+        sb.from("settings").select("*").maybeSingle(),
       ]);
       check(classes.error, "load classes");
       check(students.error, "load students");
@@ -151,9 +168,10 @@ export function createSupabaseStore(): DataStore {
     },
 
     async saveSettings(s: Settings) {
+      const owner_id = await ownerId();
       const { error } = await sb
         .from("settings")
-        .upsert({ id: "app", school_year_start: s.schoolYearStart });
+        .upsert({ owner_id, school_year_start: s.schoolYearStart }, { onConflict: "owner_id" });
       check(error, "save settings");
     },
 
