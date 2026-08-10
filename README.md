@@ -115,6 +115,42 @@ The app is a static SPA — any static host works; these steps use **Vercel**.
 
 > Netlify and Cloudflare Pages work identically (same build/output, same env vars).
 
+## Local development vs. production data
+
+Once the app is deployed, the production Supabase project holds **real student
+data**. Local development must not point at it — a stray roster upload or an
+"Import backup" (which clears every table before writing) would hit live data.
+
+The env files are split by Vite mode so this can't happen by accident:
+
+| Command | Vite mode | Env file used | Storage |
+| --- | --- | --- | --- |
+| `npm run dev` | `development` | `.env` (left empty) | **local** (localStorage) |
+| `npm run dev:cloud` | `cloud` | `.env.cloud.local` | **dev** Supabase project |
+| `npm run build` | `production` | `.env.production.local` | **prod** Supabase project |
+
+All three files are gitignored. `npm run dev` cannot reach any cloud project,
+because `.env` holds no keys — so everyday work runs against the fictional demo
+class with no login.
+
+Some bugs only appear in cloud mode, though, because localStorage writes are
+synchronous while network writes race and can fail independently. Testing those
+needs a **second Supabase project** (the free tier allows two):
+
+1. Create a new project — name it something like `icot-dev`.
+2. Run `supabase/schema.sql` in its SQL editor, same as production.
+3. Add a throwaway test user under **Authentication → Users**. Sign-ups can stay
+   enabled here; there's no real data to protect.
+4. Put that project's URL and publishable key in `.env.cloud.local`.
+5. `npm run dev:cloud` — you'll get the login screen, backed by the dev project.
+
+Seed it with fake students via **Manage roster**, or import a backup exported
+from local mode. Never copy a production backup into the dev project.
+
+> Schema changes (e.g. the planned `owner_id` columns for multi-teacher support)
+> should be applied and tested in the dev project first, then run against
+> production during a break rather than mid-semester.
+
 ## Install as an app (PWA)
 
 The app is a PWA — installable and full-screen, no browser chrome:
