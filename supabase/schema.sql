@@ -83,43 +83,8 @@ end $$;
 
 -- ----------------------------------------------------------------------------
 -- UPGRADING an existing single-tenant database?  (Skip for a fresh DB.)
---
--- If you already have single-tenant tables (text ids, a single settings row
--- id='app', "authenticated all" policy) with real data, run these steps ONCE
--- instead of relying on the fresh CREATEs above. Get <YOUR-UID> from
--- Authentication -> Users.
---
---   -- 0. (Only if upgrading a DB old enough to predate the archive feature.)
---   alter table classes add column if not exists archived_at timestamptz;
---
---   -- 1. Add + backfill + lock owner_id on the data tables.
---   alter table classes  add column if not exists owner_id uuid;
---   alter table students add column if not exists owner_id uuid;
---   alter table events   add column if not exists owner_id uuid;
---   update classes  set owner_id = '<YOUR-UID>' where owner_id is null;
---   update students set owner_id = '<YOUR-UID>' where owner_id is null;
---   update events   set owner_id = '<YOUR-UID>' where owner_id is null;
---   alter table classes  alter column owner_id set not null,
---                        alter column owner_id set default auth.uid();
---   alter table students alter column owner_id set not null,
---                        alter column owner_id set default auth.uid();
---   alter table events   alter column owner_id set not null,
---                        alter column owner_id set default auth.uid();
---
---   -- 2. Move settings to one row per owner (old table had a single id='app').
---   alter table settings add column if not exists owner_id uuid;
---   alter table settings add column if not exists seat_layout jsonb;
---   update settings set owner_id = '<YOUR-UID>' where owner_id is null;
---   alter table settings drop constraint settings_pkey;
---   alter table settings drop column if exists id;
---   alter table settings add primary key (owner_id);
---   alter table settings alter column owner_id set default auth.uid();
---
---   -- 3. Convert text ids to uuid (ONLY if existing ids are valid UUID
---   --    strings; slug ids like 'period-1' must be remapped first).
---   alter table events   alter column class_id type uuid using class_id::uuid;
---   alter table students alter column class_id type uuid using class_id::uuid;
---   alter table classes  alter column id       type uuid using id::uuid;
---
---   -- 4. Re-run the "owner all" policy block above.
+-- Don't hand-run ALTERs here — real data needs the slug-id remap (e.g. the
+-- original 'period-1' class) and the owner_id backfill handled together. Use the
+-- dedicated, transactional, re-runnable migration instead:
+--     supabase/migrate_to_multi_tenant.sql
 -- ----------------------------------------------------------------------------

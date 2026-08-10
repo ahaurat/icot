@@ -152,7 +152,11 @@ from local mode. Never copy a production backup into the dev project.
 
 > Schema changes (like the `owner_id` columns for multi-teacher support) should be
 > applied and tested in the dev project first, then run against production during a
-> break rather than mid-semester.
+> break rather than mid-semester. To move an existing single-tenant database to the
+> multi-teacher model, run
+> [`supabase/migrate_to_multi_tenant.sql`](supabase/migrate_to_multi_tenant.sql)
+> (transactional and re-runnable — it remaps slug class ids like `period-1` to
+> UUIDs and backfills `owner_id`) instead of the fresh `schema.sql`.
 
 ## Install as an app (PWA)
 
