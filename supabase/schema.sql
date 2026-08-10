@@ -43,7 +43,8 @@ create table if not exists events (
 
 create table if not exists settings (
   owner_id          uuid primary key default auth.uid(),
-  school_year_start date not null
+  school_year_start date not null,
+  seat_layout       jsonb
 );
 
 create index if not exists classes_owner_idx  on classes  (owner_id);
@@ -107,6 +108,7 @@ end $$;
 --
 --   -- 2. Move settings to one row per owner (old table had a single id='app').
 --   alter table settings add column if not exists owner_id uuid;
+--   alter table settings add column if not exists seat_layout jsonb;
 --   update settings set owner_id = '<YOUR-UID>' where owner_id is null;
 --   alter table settings drop constraint settings_pkey;
 --   alter table settings drop column if exists id;

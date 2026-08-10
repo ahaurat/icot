@@ -34,7 +34,27 @@ function MainApp() {
     void init();
   }, [init]);
 
-  if (!loaded) return <Centered>Loading…</Centered>;
+  // A load failure has to be shown here: the error banner below is unreachable
+  // while `loaded` is false, so anything that throws in init() would otherwise
+  // be indistinguishable from a slow load.
+  if (!loaded) {
+    if (!error) return <Centered>Loading…</Centered>;
+    return (
+      <Centered>
+        <div className="max-w-md rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p className="font-medium">Couldn’t load your data.</p>
+          <p className="mt-1 break-words">{error}</p>
+          <button
+            type="button"
+            className="mt-3 rounded bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+            onClick={() => void init()}
+          >
+            Try again
+          </button>
+        </div>
+      </Centered>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl p-4">

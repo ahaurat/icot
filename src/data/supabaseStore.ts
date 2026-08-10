@@ -1,6 +1,6 @@
-import type { AppData, AppEvent, ClassRoom, Settings, Student } from "../types";
+import type { AppData, AppEvent, ClassRoom, SeatLayout, Settings, Student } from "../types";
 import type { DataStore } from "./store";
-import { emptyData } from "./store";
+import { withSettingsDefaults } from "./store";
 import { getSupabaseClient } from "./supabaseClient";
 
 // Row shapes (snake_case) as stored in Supabase. See supabase/schema.sql.
@@ -30,6 +30,10 @@ interface EventRow {
   open: boolean;
   created_at: string;
   updated_at: string;
+}
+interface SettingsRow {
+  school_year_start: string;
+  seat_layout: SeatLayout | null;
 }
 
 const classToRow = (c: ClassRoom): ClassRow => ({
@@ -131,9 +135,14 @@ export function createSupabaseStore(): DataStore {
         classes: (classes.data as ClassRow[]).map(rowToClass),
         students: (students.data as StudentRow[]).map(rowToStudent),
         events: (events.data as EventRow[]).map(rowToEvent),
-        settings: settings.data
-          ? { schoolYearStart: (settings.data as { school_year_start: string }).school_year_start }
-          : emptyData().settings,
+        settings: withSettingsDefaults(
+          settings.data
+            ? {
+                schoolYearStart: (settings.data as SettingsRow).school_year_start,
+                seatLayout: (settings.data as SettingsRow).seat_layout ?? undefined,
+              }
+            : null
+        ),
       } satisfies AppData;
     },
 
@@ -171,15 +180,18 @@ export function createSupabaseStore(): DataStore {
       const owner_id = await ownerId();
       const { error } = await sb
         .from("settings")
-        .upsert({ owner_id, school_year_start: s.schoolYearStart }, { onConflict: "owner_id" });
+        .upsert(
+          { owner_id, school_year_start: s.schoolYearStart, seat_layout: s.seatLayout },
+          { onConflict: "owner_id" }
+        );
       check(error, "save settings");
     },
 
     async importAll(data: AppData) {
       // Replace everything: clear child-to-parent, then insert parent-to-child.
-      // Deletes are RLS-scoped to the current owner. `.not("id","is",null)` is an
-      // always-true filter (PostgREST requires a filter on delete) that works for
-      // the uuid id columns — unlike `.neq("id","")`, which fails uuid coercion.
+      // `id` is a uuid, so it can't be compared against "" (Postgres 22P02); match
+      // every row via an always-true null check instead, and surface failures
+      // rather than silently leaving old rows. Deletes are RLS-scoped to the owner.
       check((await sb.from("events").delete().not("id", "is", null)).error, "clear events");
       check((await sb.from("students").delete().not("id", "is", null)).error, "clear students");
       check((await sb.from("classes").delete().not("id", "is", null)).error, "clear classes");

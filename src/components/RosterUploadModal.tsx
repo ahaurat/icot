@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
 import { useAppStore } from "../state/useAppStore";
 import { parseRosterFiles, type ParsedRoster } from "../data/rosterImport";
-import { SEAT_ORDER_GRID_SIZE } from "../constants/seatOrder";
 import Modal from "./Modal";
 
 export default function RosterUploadModal({ onClose }: { onClose: () => void }) {
   const classes = useAppStore((s) => s.classes);
   const importRosters = useAppStore((s) => s.importRosters);
+  const deskTotal = useAppStore((s) => s.settings.seatLayout.seatOrder.length);
 
   const activeClasses = classes.filter((c) => !c.archivedAt);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -97,9 +97,9 @@ export default function RosterUploadModal({ onClose }: { onClose: () => void }) 
                       <td className="px-3 py-1.5 font-medium">{r.period}</td>
                       <td className="px-3 py-1.5 tabular-nums">
                         {r.names.length}
-                        {r.names.length > SEAT_ORDER_GRID_SIZE && (
+                        {r.names.length > deskTotal && (
                           <span className="ml-1 text-xs text-amber-600">
-                            (&gt;{SEAT_ORDER_GRID_SIZE}, grid grows)
+                            (&gt;{deskTotal}, grid grows)
                           </span>
                         )}
                       </td>

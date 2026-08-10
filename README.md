@@ -65,24 +65,27 @@ never lose history.
 ## Enabling Supabase (cloud sync + login)
 
 Local mode is single-device. Cloud mode syncs across devices **and requires a
-login**, so your students' data isn't exposed by the public anon key.
+login**, so your students' data isn't exposed by the public key.
 
 1. **Create a project** at [supabase.com](https://supabase.com) (free tier is fine).
 2. **Run the schema.** In the project's **SQL editor**, paste and run
    [`supabase/schema.sql`](supabase/schema.sql). This creates the tables and locks
-   Row Level Security so only signed-in users can read/write.
+   Row Level Security so each signed-in teacher can read/write only their own rows.
 3. **Enable teacher sign-ups.** Under **Authentication → Providers → Email**,
    keep **"Allow new users to sign up" ON** and **"Confirm email" ON**. Each
    teacher creates their own account from the app's **Sign up** form and clicks
    the confirmation link before signing in. (Supabase's built-in email sender is
    rate-limited and meant for low volume — configure custom SMTP under
    **Authentication → Emails** if you expect many sign-ups.)
-4. **Get your keys** from **Project Settings → API**: the *Project URL* and the
-   *anon public* key.
+4. **Get your keys** from **Settings → API Keys** (new projects) or
+   **Settings → API** (older projects):
+   - **Project URL** — shown at the top of either page (e.g. `https://xxxx.supabase.co`)
+   - **API key** — use the **Publishable key** (`sb_publishable_...`) on new projects,
+     or the **anon public** key on older ones. Both work identically here.
 5. **Set the env vars** — locally, copy `.env.example` to `.env`:
    ```
    VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-   VITE_SUPABASE_ANON_KEY=YOUR-ANON-KEY
+   VITE_SUPABASE_ANON_KEY=YOUR-PUBLISHABLE-OR-ANON-KEY
    ```
    (In production, set these in your host's env — see below.)
 6. Restart `npm run dev`. You'll get a **sign-in / sign-up screen**; create an
@@ -93,10 +96,10 @@ login**, so your students' data isn't exposed by the public anon key.
 To move existing local data into Supabase: in Local mode, **Export backup**; after
 enabling Supabase and signing in, **Import backup**.
 
-> The anon key is public (it ships in the bundle) — safe because RLS scopes every
-> row to its owner (`owner_id = auth.uid()`), so each teacher can read/write only
-> their own classes, students, and events. Sign-ups are open with email
-> confirmation; a new teacher gets their own seeded demo class on first sign-in.
+> The publishable/anon key is public (it ships in the bundle) — safe because RLS
+> scopes every row to its owner (`owner_id = auth.uid()`), so each teacher can
+> read/write only their own classes, students, and events. Sign-ups are open with
+> email confirmation; a new teacher gets their own seeded demo class on first sign-in.
 > Free-tier projects pause after ~1 week of inactivity; open the dashboard to wake
 > one after a school break.
 
@@ -114,6 +117,42 @@ The app is a static SPA — any static host works; these steps use **Vercel**.
    **Settings → Domains** if you like (free, includes HTTPS).
 
 > Netlify and Cloudflare Pages work identically (same build/output, same env vars).
+
+## Local development vs. production data
+
+Once the app is deployed, the production Supabase project holds **real student
+data**. Local development must not point at it — a stray roster upload or an
+"Import backup" (which clears every table before writing) would hit live data.
+
+The env files are split by Vite mode so this can't happen by accident:
+
+| Command | Vite mode | Env file used | Storage |
+| --- | --- | --- | --- |
+| `npm run dev` | `development` | `.env` (left empty) | **local** (localStorage) |
+| `npm run dev:cloud` | `cloud` | `.env.cloud.local` | **dev** Supabase project |
+| `npm run build` | `production` | `.env.production.local` | **prod** Supabase project |
+
+All three files are gitignored. `npm run dev` cannot reach any cloud project,
+because `.env` holds no keys — so everyday work runs against the fictional demo
+class with no login.
+
+Some bugs only appear in cloud mode, though, because localStorage writes are
+synchronous while network writes race and can fail independently. Testing those
+needs a **second Supabase project** (the free tier allows two):
+
+1. Create a new project — name it something like `icot-dev`.
+2. Run `supabase/schema.sql` in its SQL editor, same as production.
+3. Add a throwaway test user under **Authentication → Users**. Sign-ups can stay
+   enabled here; there's no real data to protect.
+4. Put that project's URL and publishable key in `.env.cloud.local`.
+5. `npm run dev:cloud` — you'll get the login screen, backed by the dev project.
+
+Seed it with fake students via **Manage roster**, or import a backup exported
+from local mode. Never copy a production backup into the dev project.
+
+> Schema changes (like the `owner_id` columns for multi-teacher support) should be
+> applied and tested in the dev project first, then run against production during a
+> break rather than mid-semester.
 
 ## Install as an app (PWA)
 

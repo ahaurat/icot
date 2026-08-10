@@ -1,5 +1,6 @@
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useAppStore, useCurrentClass } from "../state/useAppStore";
+import { isAisleCell } from "../utils/seatLayout";
 import Seat from "./Seat";
 
 interface SeatingChartProps {
@@ -12,6 +13,7 @@ export default function SeatingChart({ editMode, onOpenStudent }: SeatingChartPr
   const currentClassId = useAppStore((s) => s.currentClassId);
   const students = useAppStore((s) => s.students);
   const moveStudent = useAppStore((s) => s.moveStudent);
+  const seatLayout = useAppStore((s) => s.settings.seatLayout);
 
   // Require a small drag distance so clicks aren't swallowed as drags.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -37,15 +39,22 @@ export default function SeatingChart({ editMode, onOpenStudent }: SeatingChartPr
       className="grid gap-3"
       style={{ gridTemplateColumns: `repeat(${currentClass.seatCols}, minmax(0, 1fr))` }}
     >
-      {Array.from({ length: seatCount }, (_, i) => (
-        <Seat
-          key={i}
-          index={i}
-          student={studentBySeat.get(i)}
-          editMode={editMode}
-          onOpen={onOpenStudent}
-        />
-      ))}
+      {Array.from({ length: seatCount }, (_, i) => {
+        const student = studentBySeat.get(i);
+        // An empty non-desk cell is a visible aisle/gap and not a drop target.
+        if (!student && isAisleCell(seatLayout, i)) {
+          return <div key={i} aria-hidden className="h-20" />;
+        }
+        return (
+          <Seat
+            key={i}
+            index={i}
+            student={student}
+            editMode={editMode}
+            onOpen={onOpenStudent}
+          />
+        );
+      })}
     </div>
   );
 

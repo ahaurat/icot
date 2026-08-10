@@ -1,6 +1,6 @@
 import type { AppData, AppEvent, ClassRoom, Settings, Student } from "../types";
 import type { DataStore } from "./store";
-import { emptyData } from "./store";
+import { emptyData, withSettingsDefaults } from "./store";
 
 const STORAGE_KEY = "icot:data:v1";
 
@@ -14,7 +14,7 @@ function read(): AppData {
       classes: (parsed.classes ?? []).map((c) => ({ ...c, archivedAt: c.archivedAt ?? null })),
       students: parsed.students ?? [],
       events: parsed.events ?? [],
-      settings: parsed.settings ?? emptyData().settings,
+      settings: withSettingsDefaults(parsed.settings),
     };
   } catch (err) {
     console.error("Failed to read local data, starting fresh:", err);
