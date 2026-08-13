@@ -31,8 +31,9 @@ select set_config('app.owner_uid', 'PASTE-YOUR-TEACHER-UID-HERE', true);
 do $$
 declare v text := current_setting('app.owner_uid', true);
 begin
-  if v is null or v = '' or v = 'PASTE-YOUR-TEACHER-UID-HERE' then
-    raise exception 'Set app.owner_uid (line above) to your teacher UID first.';
+  if v is null or v = '' or
+     v !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' then
+    raise exception 'Set your teacher UID on the set_config line above (Authentication -> Users).';
   end if;
   if not exists (select 1 from auth.users where id = v::uuid) then
     raise exception 'app.owner_uid % is not an existing auth user.', v;
