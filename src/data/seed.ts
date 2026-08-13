@@ -25,7 +25,7 @@ const DEMO_STUDENTS = [
 
 /** Build the initial AppData (used the first time the app runs with empty storage). */
 export function buildSeedData(): AppData {
-  const classId = "period-1";
+  const classId = newId();
   const classes: ClassRoom[] = [
     { id: classId, name: DEMO_CLASS, seatRows: 6, seatCols: 6, archivedAt: null },
   ];

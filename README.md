@@ -70,10 +70,13 @@ login**, so your students' data isn't exposed by the public key.
 1. **Create a project** at [supabase.com](https://supabase.com) (free tier is fine).
 2. **Run the schema.** In the project's **SQL editor**, paste and run
    [`supabase/schema.sql`](supabase/schema.sql). This creates the tables and locks
-   Row Level Security so only signed-in users can read/write.
-3. **Create your account.** Go to **Authentication → Users → Add user**, and set
-   your email + a password. Then, under **Authentication → Providers → Email**,
-   **turn OFF "Allow new users to sign up"** so yours is the only account.
+   Row Level Security so each signed-in teacher can read/write only their own rows.
+3. **Enable teacher sign-ups.** Under **Authentication → Providers → Email**,
+   keep **"Allow new users to sign up" ON** and **"Confirm email" ON**. Each
+   teacher creates their own account from the app's **Sign up** form and clicks
+   the confirmation link before signing in. (Supabase's built-in email sender is
+   rate-limited and meant for low volume — configure custom SMTP under
+   **Authentication → Emails** if you expect many sign-ups.)
 4. **Get your keys** from **Settings → API Keys** (new projects) or
    **Settings → API** (older projects):
    - **Project URL** — shown at the top of either page (e.g. `https://xxxx.supabase.co`)
@@ -85,18 +88,18 @@ login**, so your students' data isn't exposed by the public key.
    VITE_SUPABASE_ANON_KEY=YOUR-PUBLISHABLE-OR-ANON-KEY
    ```
    (In production, set these in your host's env — see below.)
-6. Restart `npm run dev`. You'll get a **sign-in screen**; log in with the account
-   from step 3. The header badge switches from **💾 Local** to **☁ Cloud**, and on
-   first run with empty tables the demo data is seeded. Sign out from **Settings →
-   Account**.
+6. Restart `npm run dev`. You'll get a **sign-in / sign-up screen**; create an
+   account (or sign in). The header badge switches from **💾 Local** to
+   **☁ Cloud**, and on each teacher's first sign-in their own demo data is seeded.
+   Sign out from **Settings → Account**.
 
 To move existing local data into Supabase: in Local mode, **Export backup**; after
 enabling Supabase and signing in, **Import backup**.
 
-> The publishable key (or anon key) is safe to embed in the client bundle — RLS
-> blocks all access except your signed-in account. Keep sign-ups disabled.
-> (For multiple teachers you'd add an `owner_id` column and scope policies to
-> `auth.uid()`.)
+> The publishable/anon key is public (it ships in the bundle) — safe because RLS
+> scopes every row to its owner (`owner_id = auth.uid()`), so each teacher can
+> read/write only their own classes, students, and events. Sign-ups are open with
+> email confirmation; a new teacher gets their own seeded demo class on first sign-in.
 > Free-tier projects pause after ~1 week of inactivity; open the dashboard to wake
 > one after a school break.
 
@@ -147,9 +150,13 @@ needs a **second Supabase project** (the free tier allows two):
 Seed it with fake students via **Manage roster**, or import a backup exported
 from local mode. Never copy a production backup into the dev project.
 
-> Schema changes (e.g. the planned `owner_id` columns for multi-teacher support)
-> should be applied and tested in the dev project first, then run against
-> production during a break rather than mid-semester.
+> Schema changes (like the `owner_id` columns for multi-teacher support) should be
+> applied and tested in the dev project first, then run against production during a
+> break rather than mid-semester. To move an existing single-tenant database to the
+> multi-teacher model, run
+> [`supabase/migrate_to_multi_tenant.sql`](supabase/migrate_to_multi_tenant.sql)
+> (transactional and re-runnable — it remaps slug class ids like `period-1` to
+> UUIDs and backfills `owner_id`) instead of the fresh `schema.sql`.
 
 ## Install as an app (PWA)
 
