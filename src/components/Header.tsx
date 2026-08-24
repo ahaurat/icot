@@ -1,5 +1,6 @@
 import { useAppStore } from "../state/useAppStore";
 import { storageMode } from "../data/store";
+import { sortByPeriod } from "../utils/classSort";
 
 interface HeaderProps {
   editSeating: boolean;
@@ -15,7 +16,7 @@ export default function Header({
   onOpenSettings,
 }: HeaderProps) {
   const allClasses = useAppStore((s) => s.classes);
-  const classes = allClasses.filter((c) => !c.archivedAt);
+  const classes = sortByPeriod(allClasses.filter((c) => !c.archivedAt));
   const currentClassId = useAppStore((s) => s.currentClassId);
   const setCurrentClass = useAppStore((s) => s.setCurrentClass);
 

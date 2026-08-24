@@ -71,6 +71,42 @@ interface AppState extends AppData {
 
 let initStarted = false;
 
+// A fresh Supabase login can briefly fail with "JWT issued at future": the
+// auth service mints the token's iat off its own clock, and the API service
+// validates it off a slightly different clock, so a just-minted token can
+// look future-dated for a moment. One retry after a short delay gives the
+// token's iat time to safely fall behind that clock's "now".
+const LOAD_RETRY_DELAY_MS = 1500;
+
+async function loadWithRetry(retriesLeft: number): Promise<void> {
+  try {
+    let data = await store.loadAll();
+    if (data.classes.length === 0) {
+      // Fresh storage: seed with the ported rosters and persist them.
+      data = buildSeedData();
+      await store.importAll(data);
+    }
+    useAppStore.setState({
+      ...data,
+      error: null,
+      loaded: true,
+      currentClassId:
+        data.classes.find((c) => !c.archivedAt)?.id ?? data.classes[0]?.id ?? null,
+    });
+  } catch (err) {
+    if (retriesLeft > 0) {
+      await new Promise((r) => setTimeout(r, LOAD_RETRY_DELAY_MS));
+      return loadWithRetry(retriesLeft - 1);
+    }
+    // Release the latch so the failure can be retried without a reload, and
+    // record the reason — `loaded` stays false, so App shows this instead of
+    // sitting on "Loading…" forever.
+    initStarted = false;
+    console.error("Load error:", err);
+    useAppStore.setState({ error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   classes: [],
   students: [],
@@ -83,29 +119,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   async init() {
     if (initStarted) return;
     initStarted = true;
-
-    try {
-      let data = await store.loadAll();
-      if (data.classes.length === 0) {
-        // Fresh storage: seed with the ported rosters and persist them.
-        data = buildSeedData();
-        await store.importAll(data);
-      }
-      set({
-        ...data,
-        error: null,
-        loaded: true,
-        currentClassId:
-          data.classes.find((c) => !c.archivedAt)?.id ?? data.classes[0]?.id ?? null,
-      });
-    } catch (err) {
-      // Release the latch so the failure can be retried without a reload, and
-      // record the reason — `loaded` stays false, so App shows this instead of
-      // sitting on "Loading…" forever.
-      initStarted = false;
-      console.error("Load error:", err);
-      set({ error: err instanceof Error ? err.message : String(err) });
-    }
+    await loadWithRetry(1);
   },
 
   setCurrentClass(classId) {

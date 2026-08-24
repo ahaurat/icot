@@ -4,6 +4,7 @@ import { useAppStore } from "../state/useAppStore";
 import { signOut, useAuth } from "../state/useAuth";
 import { storageMode } from "../data/store";
 import { todayDateKey } from "../utils/time";
+import { sortByPeriod } from "../utils/classSort";
 import ConfirmDialog from "./ConfirmDialog";
 import Modal from "./Modal";
 import RosterManager from "./RosterManager";
@@ -22,7 +23,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const restoreClass = useAppStore((s) => s.restoreClass);
   const deleteClassPermanently = useAppStore((s) => s.deleteClassPermanently);
 
-  const activeClasses = classes.filter((c) => !c.archivedAt);
+  const activeClasses = sortByPeriod(classes.filter((c) => !c.archivedAt));
   const archivedClasses = classes
     .filter((c) => c.archivedAt)
     .sort((a, b) => (b.archivedAt ?? "").localeCompare(a.archivedAt ?? ""));

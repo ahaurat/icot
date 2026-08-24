@@ -3,6 +3,7 @@ import { useAppStore } from "../state/useAppStore";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
 import { clearOrder, resizeLayout, toggleDeskCell } from "../utils/seatLayout";
 import type { SeatLayout } from "../types";
+import { sortByPeriod } from "../utils/classSort";
 import ConfirmDialog from "./ConfirmDialog";
 import Modal from "./Modal";
 
@@ -21,7 +22,7 @@ export default function SeatLayoutModal({ onClose }: { onClose: () => void }) {
   const deskCount = layout.seatOrder.length;
   const seatNumberByCell = new Map(layout.seatOrder.map((cell, i) => [cell, i + 1]));
 
-  const activeClasses = classes.filter((c) => !c.archivedAt);
+  const activeClasses = sortByPeriod(classes.filter((c) => !c.archivedAt));
   const overflow = activeClasses
     .map((c) => ({ name: c.name, n: students.filter((s) => s.classId === c.id && s.active).length }))
     .filter((c) => c.n > deskCount);
