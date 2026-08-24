@@ -76,6 +76,10 @@ The pure selection logic (steps 2–3, given students, progress, settings, and t
   - Empty active roster is handled without throwing.
 - Manual verification in the browser preview: button placement/disabled state, settings section, seat highlight on pick, persistence across a page reload.
 
+## Header cleanup (bundled with this work)
+
+Remove the storage-mode badge (☁ Cloud / 💾 Local) from [src/components/Header.tsx](../../../src/components/Header.tsx) entirely — it's unrelated to the picker feature but frees up header space for the new "Choose random student" button, and the user asked for it to be dropped as part of this change. `storageMode` stays exported from `src/data/store.ts` for its other existing use in `SettingsModal.tsx`; only the badge JSX in `Header.tsx` is deleted.
+
 ## Out of scope
 
 - No popup/dialog for the result (seat highlight only, per decision).
