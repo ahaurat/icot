@@ -15,6 +15,12 @@ import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
 import { newId } from "../utils/id";
 import { elapsedSeconds } from "../utils/time";
+import { sortByPeriod } from "../utils/classSort";
+
+/** The active class to default to: the lowest-period one, so period order (not storage order) wins. */
+function defaultActiveClassId(classes: ClassRoom[]): string | null {
+  return sortByPeriod(classes.filter((c) => !c.archivedAt))[0]?.id ?? classes[0]?.id ?? null;
+}
 
 const store = getDataStore();
 
@@ -90,8 +96,7 @@ async function loadWithRetry(retriesLeft: number): Promise<void> {
       ...data,
       error: null,
       loaded: true,
-      currentClassId:
-        data.classes.find((c) => !c.archivedAt)?.id ?? data.classes[0]?.id ?? null,
+      currentClassId: defaultActiveClassId(data.classes),
     });
   } catch (err) {
     if (retriesLeft > 0) {
@@ -314,7 +319,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       classes: [...classes, ...newClasses],
       students: [...get().students, ...newStudents],
-      currentClassId: newClasses[0]?.id ?? get().currentClassId,
+      currentClassId: sortByPeriod(newClasses)[0]?.id ?? get().currentClassId,
     });
 
     // Students reference their class by FK, so every class row must be written
@@ -358,7 +363,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       events: s.events.filter((e) => e.classId !== id),
       currentClassId:
         s.currentClassId === id
-          ? s.classes.find((c) => c.id !== id && !c.archivedAt)?.id ?? null
+          ? defaultActiveClassId(s.classes.filter((c) => c.id !== id))
           : s.currentClassId,
     }));
     persist(store.deleteClass(id));
@@ -410,8 +415,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       students: coerced.students,
       events: coerced.events,
       settings,
-      currentClassId:
-        coerced.classes.find((c) => !c.archivedAt)?.id ?? coerced.classes[0]?.id ?? null,
+      currentClassId: defaultActiveClassId(coerced.classes),
     });
     persist(store.importAll(coerced));
   },
