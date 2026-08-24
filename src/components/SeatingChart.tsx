@@ -6,9 +6,10 @@ import Seat from "./Seat";
 interface SeatingChartProps {
   editMode: boolean;
   onOpenStudent: (studentId: string) => void;
+  pickedStudentId: string | null;
 }
 
-export default function SeatingChart({ editMode, onOpenStudent }: SeatingChartProps) {
+export default function SeatingChart({ editMode, onOpenStudent, pickedStudentId }: SeatingChartProps) {
   const currentClass = useCurrentClass();
   const currentClassId = useAppStore((s) => s.currentClassId);
   const students = useAppStore((s) => s.students);
@@ -52,6 +53,7 @@ export default function SeatingChart({ editMode, onOpenStudent }: SeatingChartPr
             student={student}
             editMode={editMode}
             onOpen={onOpenStudent}
+            highlighted={student?.id === pickedStudentId}
           />
         );
       })}
