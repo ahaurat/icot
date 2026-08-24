@@ -6,6 +6,7 @@ import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
 } from "../utils/time";
+import ConfirmDialog from "./ConfirmDialog";
 import Modal from "./Modal";
 
 export default function EditEventDialog({
@@ -26,6 +27,7 @@ export default function EditEventDialog({
   const initialSecs = event.durationSeconds ?? 0;
   const [minutes, setMinutes] = useState(Math.floor(initialSecs / 60));
   const [seconds, setSeconds] = useState(initialSecs % 60);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function save() {
     const startIso = fromDatetimeLocalValue(startedAt);
@@ -45,10 +47,8 @@ export default function EditEventDialog({
   }
 
   function remove() {
-    if (confirm("Delete this entry? This cannot be undone.")) {
-      deleteEvent(event.id);
-      onClose();
-    }
+    deleteEvent(event.id);
+    onClose();
   }
 
   return (
@@ -116,7 +116,7 @@ export default function EditEventDialog({
         <div className="flex items-center justify-between pt-2">
           <button
             type="button"
-            onClick={remove}
+            onClick={() => setConfirmingDelete(true)}
             className="rounded border border-red-300 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
           >
             Delete
@@ -139,6 +139,17 @@ export default function EditEventDialog({
           </div>
         </div>
       </div>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Delete entry"
+          message="Delete this entry? This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={remove}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </Modal>
   );
 }

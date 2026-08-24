@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useAppStore } from "../state/useAppStore";
+import ConfirmDialog from "./ConfirmDialog";
 
 export default function RosterManager({ classId }: { classId: string }) {
   const students = useAppStore((s) => s.students);
@@ -12,6 +13,7 @@ export default function RosterManager({ classId }: { classId: string }) {
 
   const [newName, setNewName] = useState("");
   const [newSeat, setNewSeat] = useState<string>("");
+  const [pendingDeleteStudentId, setPendingDeleteStudentId] = useState<string | null>(null);
 
   const cls = classes.find((c) => c.id === classId);
   const seatCount = cls ? cls.seatRows * cls.seatCols : 36;
@@ -120,15 +122,7 @@ export default function RosterManager({ classId }: { classId: string }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Permanently delete ${s.name} and all their history? This cannot be undone.`
-                      )
-                    ) {
-                      deleteStudentPermanently(s.id);
-                    }
-                  }}
+                  onClick={() => setPendingDeleteStudentId(s.id)}
                   className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 hover:bg-red-100"
                 >
                   Delete
@@ -138,6 +132,25 @@ export default function RosterManager({ classId }: { classId: string }) {
           </div>
         </div>
       )}
+
+      {pendingDeleteStudentId &&
+        (() => {
+          const s = inactive.find((s) => s.id === pendingDeleteStudentId);
+          if (!s) return null;
+          return (
+            <ConfirmDialog
+              title="Delete student"
+              message={`Permanently delete ${s.name} and all their history? This cannot be undone.`}
+              confirmLabel="Delete"
+              danger
+              onConfirm={() => {
+                deleteStudentPermanently(s.id);
+                setPendingDeleteStudentId(null);
+              }}
+              onCancel={() => setPendingDeleteStudentId(null)}
+            />
+          );
+        })()}
     </div>
   );
 }

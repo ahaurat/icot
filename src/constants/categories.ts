@@ -22,6 +22,7 @@ export const CATEGORIES: CategoryConfig[] = [
   { key: "other", label: "Other", type: "timed", color: "#ef4444", emoji: "🚪", summaryVerb: "was out of class (other)" },
   { key: "cellphone", label: "Cell Phone", type: "count", color: "#a855f7", emoji: "📱", summaryVerb: "had their cell phone out" },
   { key: "headphones", label: "Headphones", type: "count", color: "#6b7280", emoji: "🎧", summaryVerb: "had headphones in" },
+  { key: "extracredit", label: "Extra Credit", type: "count", color: "#0d9488", emoji: "⭐", summaryVerb: "earned extra credit" },
 ];
 
 export const CATEGORY_BY_KEY: Record<CategoryKey, CategoryConfig> =

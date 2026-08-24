@@ -10,7 +10,8 @@ export type CategoryKey =
   | "sleeping"
   | "other"
   | "cellphone"
-  | "headphones";
+  | "headphones"
+  | "extracredit";
 
 export type CategoryType = "timed" | "count";
 

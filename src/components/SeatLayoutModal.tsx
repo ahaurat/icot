@@ -3,6 +3,7 @@ import { useAppStore } from "../state/useAppStore";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
 import { clearOrder, resizeLayout, toggleDeskCell } from "../utils/seatLayout";
 import type { SeatLayout } from "../types";
+import ConfirmDialog from "./ConfirmDialog";
 import Modal from "./Modal";
 
 const SIZE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -15,6 +16,7 @@ export default function SeatLayoutModal({ onClose }: { onClose: () => void }) {
   const students = useAppStore((s) => s.students);
 
   const [layout, setLayout] = useState<SeatLayout>(saved);
+  const [confirmingReseat, setConfirmingReseat] = useState(false);
 
   const deskCount = layout.seatOrder.length;
   const seatNumberByCell = new Map(layout.seatOrder.map((cell, i) => [cell, i + 1]));
@@ -30,15 +32,9 @@ export default function SeatLayoutModal({ onClose }: { onClose: () => void }) {
   }
 
   function handleReseat() {
-    if (
-      confirm(
-        "Re-seat all active classes into this order now? This overwrites any manual seat positions."
-      )
-    ) {
-      setSeatLayout(layout);
-      reseatActiveClasses();
-      onClose();
-    }
+    setSeatLayout(layout);
+    reseatActiveClasses();
+    onClose();
   }
 
   return (
@@ -152,7 +148,7 @@ export default function SeatLayoutModal({ onClose }: { onClose: () => void }) {
           <div className="border-t pt-3">
             <button
               type="button"
-              onClick={handleReseat}
+              onClick={() => setConfirmingReseat(true)}
               className="rounded border border-amber-400 px-3 py-2 text-sm text-amber-700 hover:bg-amber-50"
             >
               Save &amp; re-seat active classes into this order
@@ -165,6 +161,17 @@ export default function SeatLayoutModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
+
+      {confirmingReseat && (
+        <ConfirmDialog
+          title="Re-seat active classes"
+          message="Re-seat all active classes into this order now? This overwrites any manual seat positions."
+          confirmLabel="Re-seat"
+          danger
+          onConfirm={handleReseat}
+          onCancel={() => setConfirmingReseat(false)}
+        />
+      )}
     </Modal>
   );
 }

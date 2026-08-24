@@ -4,6 +4,7 @@ import { useAppStore } from "../state/useAppStore";
 import { signOut, useAuth } from "../state/useAuth";
 import { storageMode } from "../data/store";
 import { todayDateKey } from "../utils/time";
+import ConfirmDialog from "./ConfirmDialog";
 import Modal from "./Modal";
 import RosterManager from "./RosterManager";
 import RosterUploadModal from "./RosterUploadModal";
@@ -29,6 +30,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [rosterClassId, setRosterClassId] = useState(currentClassId ?? activeClasses[0]?.id ?? "");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
+  const [pendingImport, setPendingImport] = useState<AppData | null>(null);
+  const [pendingDeleteClassId, setPendingDeleteClassId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Keep the roster selector valid if the selected class was archived/replaced.
@@ -54,15 +57,20 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         alert("That doesn't look like an ICOT backup file.");
         return;
       }
-      if (confirm("Importing will REPLACE all current data with the backup's contents. Continue?")) {
-        importData(parsed as AppData);
-        setRosterClassId(parsed.classes[0]?.id ?? "");
-      }
+      setPendingImport(parsed as AppData);
     } catch {
       alert("Could not read that file.");
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
+  }
+
+  function confirmImport() {
+    if (pendingImport) {
+      importData(pendingImport);
+      setRosterClassId(pendingImport.classes[0]?.id ?? "");
+    }
+    setPendingImport(null);
   }
 
   return (
@@ -168,15 +176,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (
-                          confirm(
-                            `Permanently delete ${c.name} and all its students and history? This cannot be undone.`
-                          )
-                        ) {
-                          deleteClassPermanently(c.id);
-                        }
-                      }}
+                      onClick={() => setPendingDeleteClassId(c.id)}
                       className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
                     >
                       Delete
@@ -244,6 +244,36 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
       {uploadOpen && <RosterUploadModal onClose={() => setUploadOpen(false)} />}
       {layoutOpen && <SeatLayoutModal onClose={() => setLayoutOpen(false)} />}
+
+      {pendingImport && (
+        <ConfirmDialog
+          title="Import backup"
+          message="Importing will REPLACE all current data with the backup's contents. Continue?"
+          confirmLabel="Import"
+          danger
+          onConfirm={confirmImport}
+          onCancel={() => setPendingImport(null)}
+        />
+      )}
+
+      {pendingDeleteClassId &&
+        (() => {
+          const c = archivedClasses.find((c) => c.id === pendingDeleteClassId);
+          if (!c) return null;
+          return (
+            <ConfirmDialog
+              title="Delete class"
+              message={`Permanently delete ${c.name} and all its students and history? This cannot be undone.`}
+              confirmLabel="Delete"
+              danger
+              onConfirm={() => {
+                deleteClassPermanently(c.id);
+                setPendingDeleteClassId(null);
+              }}
+              onCancel={() => setPendingDeleteClassId(null)}
+            />
+          );
+        })()}
     </Modal>
   );
 }
