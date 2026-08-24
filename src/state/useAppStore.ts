@@ -4,6 +4,7 @@ import type {
   AppEvent,
   CategoryKey,
   ClassRoom,
+  RandomPickerSettings,
   SeatLayout,
   Student,
 } from "../types";
@@ -14,7 +15,8 @@ import { buildSeedData } from "../data/seed";
 import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
 import { newId } from "../utils/id";
-import { elapsedSeconds } from "../utils/time";
+import { elapsedSeconds, todayDateKey } from "../utils/time";
+import { pickStudent } from "../utils/randomPicker";
 
 const store = getDataStore();
 
@@ -67,6 +69,10 @@ interface AppState extends AppData {
   setSchoolYearStart: (date: string) => void;
   importData: (data: AppData) => void;
   exportData: () => AppData;
+
+  // Random student picker
+  setRandomPickerSettings: (patch: Partial<RandomPickerSettings>) => void;
+  pickRandomStudent: (classId: string) => string | null;
 }
 
 let initStarted = false;
@@ -386,6 +392,37 @@ export const useAppStore = create<AppState>((set, get) => ({
     const settings = { ...get().settings, schoolYearStart: date };
     set({ settings });
     persist(store.saveSettings(settings));
+  },
+
+  setRandomPickerSettings(patch) {
+    const settings = {
+      ...get().settings,
+      randomPicker: { ...get().settings.randomPicker, ...patch },
+    };
+    set({ settings });
+    persist(store.saveSettings(settings));
+  },
+
+  pickRandomStudent(classId) {
+    const activeIds = get()
+      .students.filter((s) => s.classId === classId && s.active)
+      .map((s) => s.id);
+    const current = get().settings;
+    const result = pickStudent(
+      activeIds,
+      current.randomPicker,
+      current.pickerProgress[classId],
+      todayDateKey()
+    );
+    if (!result) return null;
+
+    const settings = {
+      ...current,
+      pickerProgress: { ...current.pickerProgress, [classId]: result.progress },
+    };
+    set({ settings });
+    persist(store.saveSettings(settings));
+    return result.studentId;
   },
 
   importData(data) {
