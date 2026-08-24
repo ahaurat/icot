@@ -81,7 +81,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   classes: [],
   students: [],
   events: [],
-  settings: { schoolYearStart: "", seatLayout: DEFAULT_SEAT_LAYOUT },
+  settings: {
+    schoolYearStart: "",
+    seatLayout: DEFAULT_SEAT_LAYOUT,
+    randomPicker: { mode: "random", resetDaily: true },
+    pickerProgress: {},
+  },
   loaded: false,
   error: null,
   currentClassId: null,
