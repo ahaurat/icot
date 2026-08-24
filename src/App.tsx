@@ -24,15 +24,23 @@ function MainApp() {
   const init = useAppStore((s) => s.init);
   const loaded = useAppStore((s) => s.loaded);
   const error = useAppStore((s) => s.error);
+  const currentClassId = useAppStore((s) => s.currentClassId);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [editSeating, setEditSeating] = useState(false);
+  const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
 
   useEffect(() => {
     void init();
   }, [init]);
+
+  // Clear the "just picked" highlight on period switches so it never shows a
+  // stale pick from a different class's roster.
+  useEffect(() => {
+    setPickedStudentId(null);
+  }, [currentClassId]);
 
   // A load failure has to be shown here: the error banner below is unreachable
   // while `loaded` is false, so anything that throws in init() would otherwise
@@ -42,7 +50,7 @@ function MainApp() {
     return (
       <Centered>
         <div className="max-w-md rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <p className="font-medium">Couldn’t load your data.</p>
+          <p className="font-medium">Couldn't load your data.</p>
           <p className="mt-1 break-words">{error}</p>
           <button
             type="button"
@@ -63,6 +71,7 @@ function MainApp() {
         onToggleEditSeating={() => setEditSeating((v) => !v)}
         onOpenSummary={() => setSummaryOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
+        onPickedStudent={setPickedStudentId}
       />
 
       {error && (
@@ -73,11 +82,15 @@ function MainApp() {
 
       {editSeating && (
         <p className="mb-3 rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Drag students between desks to rearrange seats. Click “Done moving seats” when finished.
+          Drag students between desks to rearrange seats. Click "Done moving seats" when finished.
         </p>
       )}
 
-      <SeatingChart editMode={editSeating} onOpenStudent={setSelectedStudentId} />
+      <SeatingChart
+        editMode={editSeating}
+        onOpenStudent={setSelectedStudentId}
+        pickedStudentId={pickedStudentId}
+      />
 
       {selectedStudentId && !editSeating && (
         <StudentModal
