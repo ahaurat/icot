@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useAppStore } from "../state/useAppStore";
 import { parseRosterFiles, type ParsedRoster } from "../data/rosterImport";
+import { sortByPeriod } from "../utils/classSort";
 import Modal from "./Modal";
 
 export default function RosterUploadModal({ onClose }: { onClose: () => void }) {
@@ -8,7 +9,7 @@ export default function RosterUploadModal({ onClose }: { onClose: () => void }) 
   const importRosters = useAppStore((s) => s.importRosters);
   const deskTotal = useAppStore((s) => s.settings.seatLayout.seatOrder.length);
 
-  const activeClasses = classes.filter((c) => !c.archivedAt);
+  const activeClasses = sortByPeriod(classes.filter((c) => !c.archivedAt));
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [rosters, setRosters] = useState<ParsedRoster[] | null>(null);

@@ -1,5 +1,6 @@
 import { useAppStore } from "../state/useAppStore";
 import { isPickableStudent } from "../utils/randomPicker";
+import { sortByPeriod } from "../utils/classSort";
 
 interface HeaderProps {
   editSeating: boolean;
@@ -17,7 +18,7 @@ export default function Header({
   onPickedStudent,
 }: HeaderProps) {
   const allClasses = useAppStore((s) => s.classes);
-  const classes = allClasses.filter((c) => !c.archivedAt);
+  const classes = sortByPeriod(allClasses.filter((c) => !c.archivedAt));
   const currentClassId = useAppStore((s) => s.currentClassId);
   const setCurrentClass = useAppStore((s) => s.setCurrentClass);
   const students = useAppStore((s) => s.students);

@@ -17,6 +17,12 @@ import { getDataStore, withSettingsDefaults } from "../data/store";
 import { newId } from "../utils/id";
 import { elapsedSeconds, todayDateKey } from "../utils/time";
 import { isPickableStudent, pickStudent } from "../utils/randomPicker";
+import { sortByPeriod } from "../utils/classSort";
+
+/** The active class to default to: the lowest-period one, so period order (not storage order) wins. */
+function defaultActiveClassId(classes: ClassRoom[]): string | null {
+  return sortByPeriod(classes.filter((c) => !c.archivedAt))[0]?.id ?? classes[0]?.id ?? null;
+}
 
 const store = getDataStore();
 
@@ -77,6 +83,41 @@ interface AppState extends AppData {
 
 let initStarted = false;
 
+// A fresh Supabase login can briefly fail with "JWT issued at future": the
+// auth service mints the token's iat off its own clock, and the API service
+// validates it off a slightly different clock, so a just-minted token can
+// look future-dated for a moment. One retry after a short delay gives the
+// token's iat time to safely fall behind that clock's "now".
+const LOAD_RETRY_DELAY_MS = 1500;
+
+async function loadWithRetry(retriesLeft: number): Promise<void> {
+  try {
+    let data = await store.loadAll();
+    if (data.classes.length === 0) {
+      // Fresh storage: seed with the ported rosters and persist them.
+      data = buildSeedData();
+      await store.importAll(data);
+    }
+    useAppStore.setState({
+      ...data,
+      error: null,
+      loaded: true,
+      currentClassId: defaultActiveClassId(data.classes),
+    });
+  } catch (err) {
+    if (retriesLeft > 0) {
+      await new Promise((r) => setTimeout(r, LOAD_RETRY_DELAY_MS));
+      return loadWithRetry(retriesLeft - 1);
+    }
+    // Release the latch so the failure can be retried without a reload, and
+    // record the reason — `loaded` stays false, so App shows this instead of
+    // sitting on "Loading…" forever.
+    initStarted = false;
+    console.error("Load error:", err);
+    useAppStore.setState({ error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   classes: [],
   students: [],
@@ -94,29 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   async init() {
     if (initStarted) return;
     initStarted = true;
-
-    try {
-      let data = await store.loadAll();
-      if (data.classes.length === 0) {
-        // Fresh storage: seed with the ported rosters and persist them.
-        data = buildSeedData();
-        await store.importAll(data);
-      }
-      set({
-        ...data,
-        error: null,
-        loaded: true,
-        currentClassId:
-          data.classes.find((c) => !c.archivedAt)?.id ?? data.classes[0]?.id ?? null,
-      });
-    } catch (err) {
-      // Release the latch so the failure can be retried without a reload, and
-      // record the reason — `loaded` stays false, so App shows this instead of
-      // sitting on "Loading…" forever.
-      initStarted = false;
-      console.error("Load error:", err);
-      set({ error: err instanceof Error ? err.message : String(err) });
-    }
+    await loadWithRetry(1);
   },
 
   setCurrentClass(classId) {
@@ -311,7 +330,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       classes: [...classes, ...newClasses],
       students: [...get().students, ...newStudents],
-      currentClassId: newClasses[0]?.id ?? get().currentClassId,
+      currentClassId: sortByPeriod(newClasses)[0]?.id ?? get().currentClassId,
     });
 
     // Students reference their class by FK, so every class row must be written
@@ -355,7 +374,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       events: s.events.filter((e) => e.classId !== id),
       currentClassId:
         s.currentClassId === id
-          ? s.classes.find((c) => c.id !== id && !c.archivedAt)?.id ?? null
+          ? defaultActiveClassId(s.classes.filter((c) => c.id !== id))
           : s.currentClassId,
     }));
     persist(store.deleteClass(id));
@@ -440,8 +459,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       students: coerced.students,
       events: coerced.events,
       settings,
-      currentClassId:
-        coerced.classes.find((c) => !c.archivedAt)?.id ?? coerced.classes[0]?.id ?? null,
+      currentClassId: defaultActiveClassId(coerced.classes),
     });
     persist(store.importAll(coerced));
   },
