@@ -11,6 +11,8 @@ export function withSettingsDefaults(s: Partial<Settings> | null | undefined): S
   return {
     schoolYearStart: s?.schoolYearStart || defaultSchoolYearStart(),
     seatLayout: s?.seatLayout ? normalizeSeatLayout(s.seatLayout) : DEFAULT_SEAT_LAYOUT,
+    randomPicker: s?.randomPicker ?? { mode: "random", resetDaily: true },
+    pickerProgress: s?.pickerProgress ?? {},
   };
 }
 
