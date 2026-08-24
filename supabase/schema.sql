@@ -44,8 +44,14 @@ create table if not exists events (
 create table if not exists settings (
   owner_id          uuid primary key default auth.uid(),
   school_year_start date not null,
-  seat_layout       jsonb
+  seat_layout       jsonb,
+  random_picker     jsonb,
+  picker_progress   jsonb
 );
+
+-- Existing deployments: add the columns if the table already exists without them.
+alter table settings add column if not exists random_picker   jsonb;
+alter table settings add column if not exists picker_progress jsonb;
 
 create index if not exists classes_owner_idx  on classes  (owner_id);
 create index if not exists students_owner_idx on students (owner_id);
