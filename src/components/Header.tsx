@@ -1,4 +1,5 @@
 import { useAppStore } from "../state/useAppStore";
+import { isPickableStudent } from "../utils/randomPicker";
 
 interface HeaderProps {
   editSeating: boolean;
@@ -22,7 +23,9 @@ export default function Header({
   const students = useAppStore((s) => s.students);
   const pickRandomStudent = useAppStore((s) => s.pickRandomStudent);
 
-  const hasActiveStudents = students.some((s) => s.classId === currentClassId && s.active);
+  const hasActiveStudents = students.some(
+    (s) => s.classId === currentClassId && isPickableStudent(s)
+  );
 
   function handlePick() {
     if (!currentClassId) return;

@@ -16,7 +16,7 @@ import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
 import { newId } from "../utils/id";
 import { elapsedSeconds, todayDateKey } from "../utils/time";
-import { pickStudent } from "../utils/randomPicker";
+import { isPickableStudent, pickStudent } from "../utils/randomPicker";
 
 const store = getDataStore();
 
@@ -410,7 +410,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   pickRandomStudent(classId) {
     const activeIds = get()
-      .students.filter((s) => s.classId === classId && s.active)
+      .students.filter((s) => s.classId === classId && isPickableStudent(s))
       .map((s) => s.id);
     const current = get().settings;
     const result = pickStudent(
@@ -421,12 +421,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
     if (!result) return null;
 
-    const settings = {
-      ...current,
-      pickerProgress: { ...current.pickerProgress, [classId]: result.progress },
-    };
-    set({ settings });
-    persist(store.saveSettings(settings));
+    if (result.progress) {
+      const settings = {
+        ...current,
+        pickerProgress: { ...current.pickerProgress, [classId]: result.progress },
+      };
+      set({ settings });
+      persist(store.saveSettings(settings));
+    }
     return result.studentId;
   },
 

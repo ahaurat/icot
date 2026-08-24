@@ -1,12 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
-import { pickStudent } from "./randomPicker";
+import { isPickableStudent, pickStudent } from "./randomPicker";
+
+describe("isPickableStudent", () => {
+  it("is true for an active, seated student", () => {
+    expect(isPickableStudent({ active: true, seatIndex: 3 })).toBe(true);
+  });
+  it("is false for an inactive student", () => {
+    expect(isPickableStudent({ active: false, seatIndex: 3 })).toBe(false);
+  });
+  it("is false for an active but unseated student", () => {
+    expect(isPickableStudent({ active: true, seatIndex: null })).toBe(false);
+  });
+});
 
 describe("pickStudent", () => {
   it("returns null when there are no active students", () => {
     expect(pickStudent([], { mode: "random", resetDaily: true }, undefined, "2026-08-24")).toBeNull();
   });
 
-  it("fully random mode picks from the whole roster, ignoring progress", () => {
+  it("fully random mode picks from the whole roster, ignoring progress, and reports no progress change", () => {
     vi.spyOn(Math, "random").mockReturnValue(0); // picks index 0
     const result = pickStudent(
       ["a", "b", "c"],
@@ -15,6 +27,7 @@ describe("pickStudent", () => {
       "2026-08-24"
     );
     expect(result?.studentId).toBe("a");
+    expect(result?.progress).toBeNull();
     vi.restoreAllMocks();
   });
 
@@ -27,7 +40,7 @@ describe("pickStudent", () => {
       "2026-08-24"
     );
     expect(result?.studentId).toBe("b"); // eligible = [b, c], index 0 = b
-    expect(result?.progress.calledStudentIds).toEqual(["a", "b"]);
+    expect(result?.progress?.calledStudentIds).toEqual(["a", "b"]);
     vi.restoreAllMocks();
   });
 
@@ -40,7 +53,7 @@ describe("pickStudent", () => {
       "2026-08-24"
     );
     expect(result?.studentId).toBe("a"); // pool refilled to [a, b], index 0 = a
-    expect(result?.progress.calledStudentIds).toEqual(["a"]);
+    expect(result?.progress?.calledStudentIds).toEqual(["a"]);
     vi.restoreAllMocks();
   });
 
@@ -53,8 +66,8 @@ describe("pickStudent", () => {
       "2026-08-24"
     );
     expect(result?.studentId).toBe("a"); // list cleared, then picked from full roster
-    expect(result?.progress.calledStudentIds).toEqual(["a"]);
-    expect(result?.progress.cycleStartDate).toBe("2026-08-24");
+    expect(result?.progress?.calledStudentIds).toEqual(["a"]);
+    expect(result?.progress?.cycleStartDate).toBe("2026-08-24");
     vi.restoreAllMocks();
   });
 
@@ -67,8 +80,8 @@ describe("pickStudent", () => {
       "2026-08-24"
     );
     expect(result?.studentId).toBe("b"); // eligible = [b, c], not reset
-    expect(result?.progress.calledStudentIds).toEqual(["a", "b"]);
-    expect(result?.progress.cycleStartDate).toBe("2026-08-23"); // unchanged
+    expect(result?.progress?.calledStudentIds).toEqual(["a", "b"]);
+    expect(result?.progress?.cycleStartDate).toBe("2026-08-23"); // unchanged
     vi.restoreAllMocks();
   });
 });

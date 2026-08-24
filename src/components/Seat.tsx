@@ -13,24 +13,31 @@ interface SeatProps {
   editMode: boolean;
   onOpen: (studentId: string) => void;
   highlighted: boolean;
+  pickNonce: number;
 }
 
-export default function Seat({ index, student, editMode, onOpen, highlighted }: SeatProps) {
+export default function Seat({ index, student, editMode, onOpen, highlighted, pickNonce }: SeatProps) {
   // Each desk position is a drop target while editing the seating chart.
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `seat-${index}`,
     disabled: !editMode,
   });
 
+  const ringClass = isOver ? "ring-2 ring-blue-500" : highlighted ? "ring-4 ring-yellow-400" : "";
   return (
     <div
       ref={setDropRef}
       className={`relative h-20 rounded border text-center text-sm transition-colors ${
         student ? "bg-gray-300" : "bg-gray-100 border-dashed"
-      } ${isOver ? "ring-2 ring-blue-500" : ""} ${
-        highlighted ? "ring-4 ring-yellow-400" : ""
-      }`}
+      } ${ringClass}`}
     >
+      {highlighted && (
+        <span
+          key={pickNonce}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded ring-4 ring-yellow-400 animate-ping"
+        />
+      )}
       {student ? (
         <SeatContent student={student} editMode={editMode} onOpen={onOpen} />
       ) : (

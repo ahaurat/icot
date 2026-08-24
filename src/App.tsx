@@ -31,10 +31,16 @@ function MainApp() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [editSeating, setEditSeating] = useState(false);
   const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
+  const [pickNonce, setPickNonce] = useState(0);
 
   useEffect(() => {
     void init();
   }, [init]);
+
+  function handlePickedStudent(studentId: string) {
+    setPickedStudentId(studentId);
+    setPickNonce((n) => n + 1);
+  }
 
   // Clear the "just picked" highlight on period switches so it never shows a
   // stale pick from a different class's roster.
@@ -71,7 +77,7 @@ function MainApp() {
         onToggleEditSeating={() => setEditSeating((v) => !v)}
         onOpenSummary={() => setSummaryOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
-        onPickedStudent={setPickedStudentId}
+        onPickedStudent={handlePickedStudent}
       />
 
       {error && (
@@ -82,7 +88,7 @@ function MainApp() {
 
       {editSeating && (
         <p className="mb-3 rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Drag students between desks to rearrange seats. Click "Done moving seats" when finished.
+          Drag students between desks to rearrange seats. Click “Done moving seats” when finished.
         </p>
       )}
 
@@ -90,6 +96,7 @@ function MainApp() {
         editMode={editSeating}
         onOpenStudent={setSelectedStudentId}
         pickedStudentId={pickedStudentId}
+        pickNonce={pickNonce}
       />
 
       {selectedStudentId && !editSeating && (

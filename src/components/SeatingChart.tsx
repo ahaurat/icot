@@ -7,9 +7,15 @@ interface SeatingChartProps {
   editMode: boolean;
   onOpenStudent: (studentId: string) => void;
   pickedStudentId: string | null;
+  pickNonce: number;
 }
 
-export default function SeatingChart({ editMode, onOpenStudent, pickedStudentId }: SeatingChartProps) {
+export default function SeatingChart({
+  editMode,
+  onOpenStudent,
+  pickedStudentId,
+  pickNonce,
+}: SeatingChartProps) {
   const currentClass = useCurrentClass();
   const currentClassId = useAppStore((s) => s.currentClassId);
   const students = useAppStore((s) => s.students);
@@ -54,6 +60,7 @@ export default function SeatingChart({ editMode, onOpenStudent, pickedStudentId 
             editMode={editMode}
             onOpen={onOpenStudent}
             highlighted={student?.id === pickedStudentId}
+            pickNonce={pickNonce}
           />
         );
       })}

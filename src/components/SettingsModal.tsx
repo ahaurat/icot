@@ -96,7 +96,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         <section>
           <h3 className="mb-1 text-sm font-semibold text-gray-700">Random picker</h3>
           <p className="mb-2 text-xs text-gray-500">
-            Controls how "Choose random student" picks a name.
+            Controls how “Choose random student” picks a name.
           </p>
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <label className="flex items-center gap-1">

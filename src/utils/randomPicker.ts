@@ -2,14 +2,20 @@ import type { ClassPickerProgress, RandomPickerSettings } from "../types";
 
 export interface PickResult {
   studentId: string;
-  progress: ClassPickerProgress;
+  progress: ClassPickerProgress | null;
+}
+
+/** A student is eligible for picking only if active and currently seated (visible on the chart). */
+export function isPickableStudent(s: { active: boolean; seatIndex: number | null }): boolean {
+  return s.active && s.seatIndex != null;
 }
 
 /**
  * Pick a student id for a class given its active roster, the global picker
  * settings, any prior cycle progress for that class, and today's local date
  * (YYYY-MM-DD). Pure — no store or storage access. Returns null when there
- * are no active students to pick from.
+ * are no active students to pick from. In "random" mode, `progress` is
+ * always null — random picks never change cycle state.
  */
 export function pickStudent(
   activeStudentIds: string[],
@@ -21,7 +27,7 @@ export function pickStudent(
 
   if (settings.mode === "random") {
     const studentId = activeStudentIds[Math.floor(Math.random() * activeStudentIds.length)];
-    return { studentId, progress: progress ?? { calledStudentIds: [], cycleStartDate: today } };
+    return { studentId, progress: null };
   }
 
   let calledStudentIds = progress?.calledStudentIds ?? [];
