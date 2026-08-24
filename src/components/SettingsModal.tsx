@@ -17,6 +17,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const currentClassId = useAppStore((s) => s.currentClassId);
   const schoolYearStart = useAppStore((s) => s.settings.schoolYearStart);
   const setSchoolYearStart = useAppStore((s) => s.setSchoolYearStart);
+  const randomPicker = useAppStore((s) => s.settings.randomPicker);
+  const setRandomPickerSettings = useAppStore((s) => s.setRandomPickerSettings);
   const exportData = useAppStore((s) => s.exportData);
   const importData = useAppStore((s) => s.importData);
   const restoreClass = useAppStore((s) => s.restoreClass);
@@ -88,6 +90,42 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             value={schoolYearStart}
             onChange={(e) => setSchoolYearStart(e.target.value)}
           />
+        </section>
+
+        {/* Random picker */}
+        <section>
+          <h3 className="mb-1 text-sm font-semibold text-gray-700">Random picker</h3>
+          <p className="mb-2 text-xs text-gray-500">
+            Controls how "Choose random student" picks a name.
+          </p>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <label className="flex items-center gap-1">
+              Choose student
+              <select
+                className="rounded border p-1"
+                value={randomPicker.mode}
+                onChange={(e) =>
+                  setRandomPickerSettings({ mode: e.target.value as "random" | "cycle" })
+                }
+              >
+                <option value="random">Fully random</option>
+                <option value="cycle">Cycle</option>
+              </select>
+            </label>
+            {randomPicker.mode === "cycle" && (
+              <label className="flex items-center gap-1">
+                Reset each day
+                <select
+                  className="rounded border p-1"
+                  value={randomPicker.resetDaily ? "yes" : "no"}
+                  onChange={(e) => setRandomPickerSettings({ resetDaily: e.target.value === "yes" })}
+                >
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+            )}
+          </div>
         </section>
 
         {/* Roster upload */}
