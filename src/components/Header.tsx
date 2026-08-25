@@ -1,5 +1,5 @@
 import { useAppStore } from "../state/useAppStore";
-import { storageMode } from "../data/store";
+import { isPickableStudent } from "../utils/randomPicker";
 import { sortByPeriod } from "../utils/classSort";
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   onToggleEditSeating: () => void;
   onOpenSummary: () => void;
   onOpenSettings: () => void;
+  onPickedStudent: (studentId: string) => void;
 }
 
 export default function Header({
@@ -14,29 +15,28 @@ export default function Header({
   onToggleEditSeating,
   onOpenSummary,
   onOpenSettings,
+  onPickedStudent,
 }: HeaderProps) {
   const allClasses = useAppStore((s) => s.classes);
   const classes = sortByPeriod(allClasses.filter((c) => !c.archivedAt));
   const currentClassId = useAppStore((s) => s.currentClassId);
   const setCurrentClass = useAppStore((s) => s.setCurrentClass);
+  const students = useAppStore((s) => s.students);
+  const pickRandomStudent = useAppStore((s) => s.pickRandomStudent);
+
+  const hasActiveStudents = students.some(
+    (s) => s.classId === currentClassId && isPickableStudent(s)
+  );
+
+  function handlePick() {
+    if (!currentClassId) return;
+    const studentId = pickRandomStudent(currentClassId);
+    if (studentId) onPickedStudent(studentId);
+  }
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <h1 className="text-3xl font-bold">ICOT</h1>
-      <span
-        className="rounded-full px-2 py-0.5 text-xs font-medium"
-        style={{
-          backgroundColor: storageMode === "supabase" ? "#dcfce7" : "#e5e7eb",
-          color: storageMode === "supabase" ? "#166534" : "#374151",
-        }}
-        title={
-          storageMode === "supabase"
-            ? "Syncing to Supabase"
-            : "Saving locally in this browser"
-        }
-      >
-        {storageMode === "supabase" ? "☁ Cloud" : "💾 Local"}
-      </span>
 
       <select
         className="rounded border p-2"
@@ -49,6 +49,15 @@ export default function Header({
           </option>
         ))}
       </select>
+
+      <button
+        type="button"
+        onClick={handlePick}
+        disabled={!hasActiveStudents}
+        className="rounded bg-purple-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Choose random student
+      </button>
 
       <div className="ml-auto flex items-center gap-2">
         <button

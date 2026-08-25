@@ -1,4 +1,13 @@
-import type { AppData, AppEvent, ClassRoom, SeatLayout, Settings, Student } from "../types";
+import type {
+  AppData,
+  AppEvent,
+  ClassPickerProgress,
+  ClassRoom,
+  RandomPickerSettings,
+  SeatLayout,
+  Settings,
+  Student,
+} from "../types";
 import type { DataStore } from "./store";
 import { withSettingsDefaults } from "./store";
 import { getSupabaseClient } from "./supabaseClient";
@@ -34,6 +43,8 @@ interface EventRow {
 interface SettingsRow {
   school_year_start: string;
   seat_layout: SeatLayout | null;
+  random_picker: RandomPickerSettings | null;
+  picker_progress: Record<string, ClassPickerProgress> | null;
 }
 
 const classToRow = (c: ClassRoom): ClassRow => ({
@@ -140,6 +151,8 @@ export function createSupabaseStore(): DataStore {
             ? {
                 schoolYearStart: (settings.data as SettingsRow).school_year_start,
                 seatLayout: (settings.data as SettingsRow).seat_layout ?? undefined,
+                randomPicker: (settings.data as SettingsRow).random_picker ?? undefined,
+                pickerProgress: (settings.data as SettingsRow).picker_progress ?? undefined,
               }
             : null
         ),
@@ -178,12 +191,16 @@ export function createSupabaseStore(): DataStore {
 
     async saveSettings(s: Settings) {
       const owner_id = await ownerId();
-      const { error } = await sb
-        .from("settings")
-        .upsert(
-          { owner_id, school_year_start: s.schoolYearStart, seat_layout: s.seatLayout },
-          { onConflict: "owner_id" }
-        );
+      const { error } = await sb.from("settings").upsert(
+        {
+          owner_id,
+          school_year_start: s.schoolYearStart,
+          seat_layout: s.seatLayout,
+          random_picker: s.randomPicker,
+          picker_progress: s.pickerProgress,
+        },
+        { onConflict: "owner_id" }
+      );
       check(error, "save settings");
     },
 

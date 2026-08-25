@@ -62,11 +62,28 @@ export interface SeatLayout {
   seatOrder: number[];
 }
 
+export interface RandomPickerSettings {
+  mode: "random" | "cycle";
+  /** Only meaningful when mode === "cycle": whether the called-list resets each calendar day. */
+  resetDaily: boolean;
+}
+
+export interface ClassPickerProgress {
+  /** Student ids already picked in the current cycle round. */
+  calledStudentIds: string[];
+  /** Local YYYY-MM-DD the current cycle round began; used for the daily reset check. */
+  cycleStartDate: string;
+}
+
 export interface Settings {
   /** ISO date (YYYY-MM-DD) marking the start of the tracked school year. */
   schoolYearStart: string;
   /** Shared seating layout used by roster upload and the seating chart. */
   seatLayout: SeatLayout;
+  /** Global "Choose random student" config. */
+  randomPicker: RandomPickerSettings;
+  /** Per-class cycle progress for the random picker, keyed by classId. */
+  pickerProgress: Record<string, ClassPickerProgress>;
 }
 
 export interface AppData {
