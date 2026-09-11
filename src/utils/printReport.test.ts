@@ -21,6 +21,9 @@ const archivedClass: ClassRoom = {
 const alice: Student = { id: "s1", classId: "c1", name: "Alice", seatIndex: 1, active: true };
 const bob: Student = { id: "s2", classId: "c1", name: "Bob", seatIndex: 0, active: true };
 const inactive: Student = { id: "s3", classId: "c1", name: "Zoe", seatIndex: 2, active: false };
+const charlie: Student = { id: "s4", classId: "c1", name: "Charlie", seatIndex: 5, active: true };
+const zach: Student = { id: "s5", classId: "c1", name: "Zach", seatIndex: null, active: true };
+const amy: Student = { id: "s6", classId: "c1", name: "Amy", seatIndex: null, active: true };
 
 function makeEvent(patch: Partial<AppEvent>): AppEvent {
   return {
@@ -70,5 +73,12 @@ describe("buildPrintReports", () => {
     const carl: Student = { id: "s4", classId: "c3", name: "Carl", seatIndex: 0, active: true };
     const reports = buildPrintReports([period3, classA, archivedClass], [alice, bob, carl], [], range);
     expect(reports.map((r) => r.classRoom.id)).toEqual(["c1", "c1", "c3"]);
+  });
+
+  it("orders unseated students alphabetically, after seated students by seat index", () => {
+    // Test branches: both unseated → alphabetical (Amy/Zach); mixed unseated → unseated last; both seated → by index
+    const reports = buildPrintReports([classA], [charlie, zach, bob, amy], [], range);
+    // Expected: bob (seat 0), charlie (seat 5), amy (unseated, alpha), zach (unseated, alpha)
+    expect(reports.map((r) => r.student.name)).toEqual(["Bob", "Charlie", "Amy", "Zach"]);
   });
 });
