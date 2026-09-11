@@ -1,7 +1,7 @@
 import type { CategoryConfig } from "../constants/categories";
 import { CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import { useAppStore } from "../state/useAppStore";
-import { useStudentTotals } from "../hooks/useAggregates";
+import { usePeriodRangeLabel, useStudentTotals } from "../hooks/useAggregates";
 import { formatDuration } from "../utils/time";
 import EventHistory from "./EventHistory";
 import Modal from "./Modal";
@@ -18,7 +18,8 @@ export default function StudentModal({
   const startTimer = useAppStore((s) => s.startTimer);
   const logCount = useAppStore((s) => s.logCount);
   const totals = useStudentTotals(studentId);
-  const timedYear = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].year, 0);
+  const periodLabel = usePeriodRangeLabel();
+  const timedPeriod = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].period, 0);
 
   if (!student) {
     onClose();
@@ -62,10 +63,11 @@ export default function StudentModal({
         <div>
           <p className="mb-2 text-sm font-medium text-gray-600">Totals</p>
           <TotalsTable studentId={student.id} />
-          {timedYear > 0 && (
+          {timedPeriod > 0 && (
             <p className="mt-2 text-sm text-gray-600">
               {student.name.split(" ")[0]} has been off-task for a total of{" "}
-              <strong>{formatDuration(timedYear)}</strong> this year.
+              <strong>{formatDuration(timedPeriod)}</strong> during{" "}
+              {periodLabel.charAt(0).toLowerCase() + periodLabel.slice(1)}.
             </p>
           )}
         </div>
