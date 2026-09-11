@@ -2,6 +2,14 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
+# WARNING: this file configures the LOCAL dev stack only (`supabase start`).
+# It is never pushed to a remote project by this repo's workflow (which only
+# runs `link` + `db push`, i.e. migrations). Do not run `supabase config push`
+# against production — remote auth/API settings (e.g. email confirmation,
+# site URL) are managed in the Supabase dashboard per README "Enabling
+# Supabase", and several defaults below (e.g. [auth.email] enable_confirmations
+# = false) intentionally differ from production's dashboard settings for local
+# development convenience.
 project_id = "icot"
 
 [api]

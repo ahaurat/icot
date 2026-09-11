@@ -124,6 +124,26 @@ Schema changes are managed as Supabase CLI migrations under `supabase/migrations
 not by pasting SQL into the dashboard (that path is only for bootstrapping a
 brand-new project — see "Enabling Supabase" above).
 
+### First-time setup (once per project)
+
+Before the workflow can run against a project, link it locally and mark the
+schema that's already live as already applied — this is what stops `db push`
+from trying to `create table` against tables that already exist:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <project-ref>
+npx supabase migration repair 20260911000000 --status applied --linked
+npx supabase migration list --linked   # confirms nothing pending
+```
+
+Do this once for the production project ref and once for the dev project ref.
+Repeat it for any brand-new project stood up later via the "Enabling Supabase"
+bootstrap path above, too — it needs the same baselining before this workflow
+can manage its schema.
+
+### Going forward
+
 1. `npx supabase migration new <name>` — creates a new timestamped file under
    `supabase/migrations/`.
 2. Hand-edit the generated SQL.

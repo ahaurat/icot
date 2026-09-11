@@ -26,6 +26,3 @@ yarn-error.log*
 # Local roster files (student PII) — never commit
 sample-rosters/
 public/testrosters/
-
-# Supabase CLI local cache (created by `supabase init`/`link`, never committed)
-supabase/.temp/

@@ -439,6 +439,11 @@ automated verification. Do these once, after Tasks 1-4 are merged:
    Expected: `20260911000000` shows as applied on both Local and Remote, with
    no pending migrations.
 
+   Before linking, also run `SHOW server_version;` against the production database
+   (via the SQL editor) and confirm its major version matches `supabase/config.toml`'s
+   `db.major_version` (currently `17`) — a mismatch causes `supabase link` to emit
+   config-drift warnings.
+
 3. **Repeat step 2 for the dev project** (`supabase link --project-ref
    <dev-project-ref>`, then the same `migration repair` and `migration list`
    commands).

@@ -14,12 +14,16 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    concurrency:
+      group: supabase-migrate-${{ inputs.environment }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - uses: supabase/setup-cli@v3
         with:
-          version: latest
+          version: 2.117.0
 
       - name: Link and push migrations
         env:
@@ -27,5 +31,10 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ inputs.environment == 'production' && secrets.SUPABASE_PROD_DB_PASSWORD || secrets.SUPABASE_DEV_DB_PASSWORD }}
           PROJECT_REF: ${{ inputs.environment == 'production' && secrets.SUPABASE_PROD_PROJECT_REF || secrets.SUPABASE_DEV_PROJECT_REF }}
         run: |
+          if [ -z "$PROJECT_REF" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::Missing secrets for environment '${{ inputs.environment }}'"
+            exit 1
+          fi
+          echo "Target: ${{ inputs.environment }} (ref ${PROJECT_REF:0:4}...)"
           supabase link --project-ref "$PROJECT_REF"
           supabase db push
