@@ -36,16 +36,6 @@ export function parseDateOnlyLocal(dateOnly: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0);
 }
 
-/** Whether an ISO timestamp falls on today's local calendar day. */
-export function isToday(iso: string): boolean {
-  return localDateKey(new Date(iso)) === todayDateKey();
-}
-
-/** Whether an ISO timestamp is on/after the school-year start (local midnight). */
-export function isInSchoolYear(iso: string, schoolYearStart: string): boolean {
-  return new Date(iso).getTime() >= parseDateOnlyLocal(schoolYearStart).getTime();
-}
-
 /**
  * Default school-year start: Aug 1 of the current school year. Aug or later ->
  * this calendar year's Aug 1; before Aug -> last calendar year's Aug 1.
