@@ -2,7 +2,8 @@
 
 A classroom tool for tracking student distractions: per-student timers (bathroom,
 nurse, office, sleeping, other) and tallies (cell phone, headphones), with
-running totals for **today** and the **school year**.
+running totals for **today** and a configurable **period** (the whole school
+year, or a custom date range).
 
 Originally a single `index.html`; rewritten as a React + Vite + TypeScript app.
 The original file is preserved in the first git commit.
@@ -186,7 +187,7 @@ src/
   constants/categories.ts   Category config (timed vs count, colors)
   data/                     Storage: DataStore interface, local + Supabase adapters, seed
   state/                    Zustand store (useAppStore) + live-timer ticker
-  hooks/useAggregates.ts    Today/Year totals per student × category
+  hooks/useAggregates.ts    Today/Period totals per student × category
   utils/                    time + id helpers
   components/               Header, SeatingChart, Seat, StudentModal, TotalsTable,
                             EventHistory, EditEventDialog, SettingsModal, RosterManager
