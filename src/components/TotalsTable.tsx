@@ -1,6 +1,6 @@
 import { COUNT_CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import type { CategoryConfig } from "../constants/categories";
-import { usePeriodRangeLabel, useStudentTotals } from "../hooks/useAggregates";
+import { usePeriodColumnLabel, useStudentTotals } from "../hooks/useAggregates";
 import { formatDuration } from "../utils/time";
 
 /** Format a total: duration for timed categories, count for count categories. */
@@ -11,7 +11,7 @@ function formatTotal(value: number, type: "timed" | "count"): string {
 
 export default function TotalsTable({ studentId }: { studentId: string }) {
   const totals = useStudentTotals(studentId);
-  const periodLabel = usePeriodRangeLabel();
+  const periodLabel = usePeriodColumnLabel();
 
   const timedToday = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].today, 0);
   const timedPeriod = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].period, 0);

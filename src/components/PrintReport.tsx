@@ -26,10 +26,10 @@ export default function PrintReport({
   const reports = buildPrintReports(scopedClasses, students, events, request.range);
 
   useEffect(() => {
-    window.print();
     window.addEventListener("afterprint", onDone);
+    window.print();
     return () => window.removeEventListener("afterprint", onDone);
-  }, [onDone]);
+  }, [onDone, request]);
 
   return (
     <div className="hidden print:block">

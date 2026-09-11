@@ -1,5 +1,5 @@
 import type { AppEvent, CategoryKey, ClassRoom, Student } from "../types";
-import { computeCategoryTotalsInRange } from "../hooks/useAggregates";
+import { computeCategoryTotalsInRange } from "./categoryTotals";
 import { sortByPeriod } from "./classSort";
 import { describeEventDuration, isInRange } from "./time";
 import type { DateRange } from "./time";

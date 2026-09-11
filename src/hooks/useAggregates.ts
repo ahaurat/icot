@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import type { AppEvent, CategoryKey } from "../types";
+import type { CategoryKey } from "../types";
 import { CATEGORIES } from "../constants/categories";
 import { useAppStore } from "../state/useAppStore";
-import type { DateRange } from "../utils/time";
-import { elapsedSeconds, isInRange, presetRange, resolveViewPeriodRange } from "../utils/time";
+import { formatCompactDate, presetRange, resolveViewPeriodRange } from "../utils/time";
+import { computeCategoryTotalsInRange } from "../utils/categoryTotals";
 
 /** For timed categories these are seconds; for count categories, instance counts. */
 export interface CategoryTotal {
@@ -17,33 +17,6 @@ function emptyTotals(): StudentTotals {
   return Object.fromEntries(
     CATEGORIES.map((c) => [c.key, { today: 0, period: 0 }])
   ) as StudentTotals;
-}
-
-/** Value a single event contributes: elapsed seconds (timed) or 1 (count). */
-function eventValue(e: AppEvent): number {
-  if (e.type === "count") return 1;
-  if (e.durationSeconds != null) return e.durationSeconds;
-  return e.open ? elapsedSeconds(e.startedAt) : 0;
-}
-
-/**
- * Per-category totals for one student within an arbitrary date range. Shared
- * by the standing "period" column (`useStudentTotals` below) and printed
- * reports (`src/utils/printReport.ts`), which total over a teacher-chosen
- * range instead.
- */
-export function computeCategoryTotalsInRange(
-  events: AppEvent[],
-  studentId: string,
-  range: DateRange
-): Record<CategoryKey, number> {
-  const totals = Object.fromEntries(CATEGORIES.map((c) => [c.key, 0])) as Record<CategoryKey, number>;
-  for (const e of events) {
-    if (e.studentId !== studentId) continue;
-    if (!isInRange(e.startedAt, range)) continue;
-    totals[e.categoryKey] += eventValue(e);
-  }
-  return totals;
 }
 
 /**
@@ -80,4 +53,17 @@ export function usePeriodRangeLabel(): string {
     () => resolveViewPeriodRange(viewPeriod, schoolYearStart).label,
     [viewPeriod, schoolYearStart]
   );
+}
+
+/** Compact header label for the period column (e.g. "Year" or "1/20 – 6/5"), distinct from usePeriodRangeLabel's full prose form. */
+export function usePeriodColumnLabel(): string {
+  const schoolYearStart = useAppStore((s) => s.settings.schoolYearStart);
+  const viewPeriod = useAppStore((s) => s.settings.viewPeriod);
+  return useMemo(() => {
+    if (viewPeriod.mode === "custom" && viewPeriod.customStart && viewPeriod.customEnd) {
+      const range = resolveViewPeriodRange(viewPeriod, schoolYearStart);
+      return `${formatCompactDate(range.start)} – ${formatCompactDate(range.end)}`;
+    }
+    return "Year";
+  }, [viewPeriod, schoolYearStart]);
 }

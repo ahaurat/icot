@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeCategoryTotalsInRange } from "./useAggregates";
+import { computeCategoryTotalsInRange } from "./categoryTotals";
 import type { AppEvent } from "../types";
 import type { DateRange } from "../utils/time";
 

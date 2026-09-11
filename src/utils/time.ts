@@ -70,6 +70,11 @@ export function formatMinutesShort(totalSeconds: number): string {
   return `${m}m`;
 }
 
+/** Compact month/day for narrow UI, e.g. new Date(2026, 0, 20) -> "1/20". */
+export function formatCompactDate(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 /** Human-readable value for one event: a tally count, or its duration (elapsed-so-far if still running). */
 export function describeEventDuration(e: AppEvent): string {
   if (e.type === "count") return "1×";
