@@ -7,6 +7,7 @@ import type {
   RandomPickerSettings,
   SeatLayout,
   Student,
+  ViewPeriod,
 } from "../types";
 import { CATEGORY_BY_KEY } from "../constants/categories";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
@@ -73,6 +74,7 @@ interface AppState extends AppData {
 
   // Settings + data
   setSchoolYearStart: (date: string) => void;
+  setViewPeriod: (patch: Partial<ViewPeriod>) => void;
   importData: (data: AppData) => void;
   exportData: () => AppData;
 
@@ -127,6 +129,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     seatLayout: DEFAULT_SEAT_LAYOUT,
     randomPicker: { mode: "random", resetDaily: true },
     pickerProgress: {},
+    viewPeriod: { mode: "year", customStart: "", customEnd: "" },
   },
   loaded: false,
   error: null,
@@ -414,6 +417,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setSchoolYearStart(date) {
     const settings = { ...get().settings, schoolYearStart: date };
+    set({ settings });
+    persist(store.saveSettings(settings));
+  },
+
+  setViewPeriod(patch) {
+    const settings = {
+      ...get().settings,
+      viewPeriod: { ...get().settings.viewPeriod, ...patch },
+    };
     set({ settings });
     persist(store.saveSettings(settings));
   },
