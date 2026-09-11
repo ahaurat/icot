@@ -39,9 +39,10 @@ npm run typecheck  # tsc only
   period in plain sentences ("Ada Lovelace went to the bathroom for 8m (2 trips)"),
   defaulting to today with a date-range picker (Today / Yesterday / This week /
   This month / This school year / custom range).
-- **Totals**: each student modal shows a Today / Year total per category, a
+- **Totals**: each student modal shows a Today / Period total per category, a
   **Total off-task** row summing the timed categories, and a plain-English summary
-  ("… off-task for a total of 15m this year").
+  ("… off-task for a total of 15m during this school year"). What "Period" means
+  is controlled by **Totals timeframe** below.
 - **Edit entries**: in a student's History, click **Edit** to change an entry's
   category, time, or duration — or delete it. Handy when a timer ran too long. The
   History list has a multi-select **category filter**.
@@ -57,6 +58,14 @@ npm run typecheck  # tsc only
   hidden but kept, and restorable from Settings → Archived rosters.
 - **School-year boundary**: Settings → School year. Year totals count events on or
   after this date (default Aug 1, auto-rolls each year).
+- **Totals timeframe**: Settings → Totals timeframe switches the Period column
+  between "Whole year" and a custom start/end range (e.g. the first day of
+  semester 2), so counts can restart for a new term without losing earlier
+  history.
+- **Print reports**: from the Summary modal, pick a date range and "This class"
+  or "All classes", then **Print…** for one page per active student with their
+  totals and itemized activity log for that range — handy for end-of-term
+  handouts.
 - **Backup / restore**: Export/Import the full dataset as JSON.
 
 Stable student IDs back all of this: moving seats, renaming, and removing students
