@@ -26,3 +26,6 @@ yarn-error.log*
 # Local roster files (student PII) — never commit
 sample-rosters/
 public/testrosters/
+
+# Scratch agent task reports (subagent-driven-development workflow)
+/sdd/
