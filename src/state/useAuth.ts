@@ -74,6 +74,7 @@ export function useAuth(): AuthInfo {
         // stale flag was left behind by an abandoned recovery on this browser
         // (e.g. the tab was closed before setting a new password).
         localStorage.removeItem(RECOVERING_KEY);
+        setRecovering(false);
       }
     });
 
