@@ -8,6 +8,7 @@ import SettingsModal from "./components/SettingsModal";
 import SummaryModal from "./components/SummaryModal";
 import PrintReport from "./components/PrintReport";
 import LoginScreen from "./components/LoginScreen";
+import ResetPasswordScreen from "./components/ResetPasswordScreen";
 import type { PrintRequest } from "./utils/printReport";
 
 function Centered({ children }: { children: ReactNode }) {
@@ -15,10 +16,11 @@ function Centered({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const { ready, authed } = useAuth();
+  const { ready, authed, recovering, authError, completeRecovery } = useAuth();
 
   if (!ready) return <Centered>Loading…</Centered>;
-  if (!authed) return <LoginScreen />;
+  if (recovering) return <ResetPasswordScreen onComplete={completeRecovery} />;
+  if (!authed) return <LoginScreen authError={authError} />;
   return <MainApp />;
 }
 
