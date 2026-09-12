@@ -87,18 +87,21 @@ login**, so your students' data isn't exposed by the public key.
    the confirmation link before signing in. (Supabase's built-in email sender is
    rate-limited and meant for low volume — configure custom SMTP under
    **Authentication → Emails** if you expect many sign-ups.)
-4. **Get your keys** from **Settings → API Keys** (new projects) or
+4. To test the password-reset flow locally, add `http://localhost:5173` to
+   that project's **Authentication → URL Configuration → Redirect URLs** (the
+   Site URL alone doesn't cover a different origin like localhost).
+5. **Get your keys** from **Settings → API Keys** (new projects) or
    **Settings → API** (older projects):
    - **Project URL** — shown at the top of either page (e.g. `https://xxxx.supabase.co`)
    - **API key** — use the **Publishable key** (`sb_publishable_...`) on new projects,
      or the **anon public** key on older ones. Both work identically here.
-5. **Set the env vars** — locally, copy `.env.example` to `.env`:
+6. **Set the env vars** — locally, copy `.env.example` to `.env`:
    ```
    VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
    VITE_SUPABASE_ANON_KEY=YOUR-PUBLISHABLE-OR-ANON-KEY
    ```
    (In production, set these in your host's env — see below.)
-6. Restart `npm run dev`. You'll get a **sign-in / sign-up screen**; create an
+7. Restart `npm run dev`. You'll get a **sign-in / sign-up screen**; create an
    account (or sign in). The header badge switches from **💾 Local** to
    **☁ Cloud**, and on each teacher's first sign-in their own demo data is seeded.
    Sign out from **Settings → Account**.
@@ -215,8 +218,11 @@ needs a **second Supabase project** (the free tier allows two):
    you can instead run the **Supabase Migrate** workflow with `dev` selected.)
 3. Add a throwaway test user under **Authentication → Users**. Sign-ups can stay
    enabled here; there's no real data to protect.
-4. Put that project's URL and publishable key in `.env.cloud.local`.
-5. `npm run dev:cloud` — you'll get the login screen, backed by the dev project.
+4. To test the password-reset flow locally, add `http://localhost:5173` to
+   this project's **Authentication → URL Configuration → Redirect URLs** (the
+   Site URL alone doesn't cover a different origin like localhost).
+5. Put that project's URL and publishable key in `.env.cloud.local`.
+6. `npm run dev:cloud` — you'll get the login screen, backed by the dev project.
 
 Seed it with fake students via **Manage roster**, or import a backup exported
 from local mode. Never copy a production backup into the dev project.

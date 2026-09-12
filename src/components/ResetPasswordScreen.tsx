@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { getSupabaseClient } from "../data/supabaseClient";
+import { signOut } from "../state/useAuth";
 
 export default function ResetPasswordScreen({ onComplete }: { onComplete: () => void }) {
   const [password, setPassword] = useState("");
@@ -74,6 +75,17 @@ export default function ResetPasswordScreen({ onComplete }: { onComplete: () => 
         >
           {busy ? "Updating…" : "Update password"}
         </button>
+
+        <p className="text-center text-sm text-gray-600">
+          <button
+            type="button"
+            disabled={busy}
+            className="font-medium text-blue-600 underline"
+            onClick={() => void signOut()}
+          >
+            Cancel and sign out
+          </button>
+        </p>
       </form>
     </div>
   );
