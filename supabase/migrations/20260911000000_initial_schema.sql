@@ -1,10 +1,6 @@
--- ICOT Supabase schema (multi-teacher) — historical bootstrap script.
---
--- This file is NOT kept in sync with schema changes made after 2026-09-11.
--- It exists only to stand up a brand-new Supabase project by hand (paste into
--- the SQL editor) when there's no migration history yet — see README
--- "Enabling Supabase". For the current, authoritative schema and its history,
--- see supabase/migrations/.
+-- ICOT Supabase schema (multi-teacher) — baseline migration.
+-- Mirrors the schema already live in this project as of 2026-09-11, hand-copied
+-- from supabase/schema.sql rather than generated via `supabase db pull`.
 --
 -- Multi-teacher model: every row is owned by the teacher who created it
 -- (owner_id = auth.uid()) and Row Level Security scopes all access to the
@@ -90,11 +86,3 @@ begin
     );
   end loop;
 end $$;
-
--- ----------------------------------------------------------------------------
--- UPGRADING an existing single-tenant database?  (Skip for a fresh DB.)
--- Don't hand-run ALTERs here — real data needs the slug-id remap (e.g. the
--- original 'period-1' class) and the owner_id backfill handled together. Use the
--- dedicated, transactional, re-runnable migration instead:
---     supabase/migrate_to_multi_tenant.sql
--- ----------------------------------------------------------------------------
