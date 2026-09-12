@@ -16,11 +16,11 @@ function Centered({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const { ready, authed, recovering, completeRecovery } = useAuth();
+  const { ready, authed, recovering, authError, completeRecovery } = useAuth();
 
   if (!ready) return <Centered>Loading…</Centered>;
   if (recovering) return <ResetPasswordScreen onComplete={completeRecovery} />;
-  if (!authed) return <LoginScreen />;
+  if (!authed) return <LoginScreen authError={authError} />;
   return <MainApp />;
 }
 
