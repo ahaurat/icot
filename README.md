@@ -128,6 +128,48 @@ The app is a static SPA — any static host works; these steps use **Vercel**.
 
 > Netlify and Cloudflare Pages work identically (same build/output, same env vars).
 
+## Deploying schema changes (Supabase migrations)
+
+Schema changes are managed as Supabase CLI migrations under `supabase/migrations/`,
+not by pasting SQL into the dashboard (that path is only for bootstrapping a
+brand-new project — see "Enabling Supabase" above).
+
+### First-time setup (once per project)
+
+Before the workflow can run against a project, link it locally and mark the
+schema that's already live as already applied — this is what stops `db push`
+from trying to `create table` against tables that already exist:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <project-ref>
+npx supabase migration repair 20260911000000 --status applied --linked
+npx supabase migration list --linked   # confirms nothing pending
+```
+
+Do this once for the production project ref and once for the dev project ref.
+Repeat it for any brand-new project stood up later via the "Enabling Supabase"
+bootstrap path above, too — it needs the same baselining before this workflow
+can manage its schema.
+
+### Going forward
+
+1. `npx supabase migration new <name>` — creates a new timestamped file under
+   `supabase/migrations/`.
+2. Hand-edit the generated SQL.
+3. Test it against the dev project: in GitHub, go to **Actions → Supabase
+   Migrate → Run workflow**, choose **dev**, and run it. Verify with
+   `npm run dev:cloud`.
+4. Open a PR and merge the migration file to `main` as normal — merging does
+   **not** touch either database by itself, it only ships the file.
+5. When ready, go to **Actions → Supabase Migrate → Run workflow**, choose
+   **production**, and run it.
+
+The workflow requires these repo secrets (**Settings → Secrets and variables
+→ Actions**), added once when this is first set up:
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROD_PROJECT_REF`, `SUPABASE_PROD_DB_PASSWORD`,
+`SUPABASE_DEV_PROJECT_REF`, `SUPABASE_DEV_DB_PASSWORD`.
+
 ## Local development vs. production data
 
 Once the app is deployed, the production Supabase project holds **real student
@@ -151,7 +193,9 @@ synchronous while network writes race and can fail independently. Testing those
 needs a **second Supabase project** (the free tier allows two):
 
 1. Create a new project — name it something like `icot-dev`.
-2. Run `supabase/schema.sql` in its SQL editor, same as production.
+2. Run `supabase/schema.sql` in its SQL editor, same as production. (Once the
+   project is linked and baselined — see "Deploying schema changes" above —
+   you can instead run the **Supabase Migrate** workflow with `dev` selected.)
 3. Add a throwaway test user under **Authentication → Users**. Sign-ups can stay
    enabled here; there's no real data to protect.
 4. Put that project's URL and publishable key in `.env.cloud.local`.
