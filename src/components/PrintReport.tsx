@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { CATEGORY_BY_KEY, COUNT_CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import { useAppStore } from "../state/useAppStore";
 import { formatDuration } from "../utils/time";
-import { buildPrintDocumentTitle, buildPrintReports } from "../utils/printReport";
+import { buildPrintDocumentTitle, buildPrintReports, formatPrintRangeLabel } from "../utils/printReport";
 import type { PrintRequest } from "../utils/printReport";
 
 function formatCategoryTotal(value: number, type: "timed" | "count"): string {
@@ -24,6 +24,7 @@ export default function PrintReport({
   const scopedClasses =
     request.scope === "all" ? classes : classes.filter((c) => c.id === request.classId);
   const reports = buildPrintReports(scopedClasses, students, events, request.range);
+  const rangeLabel = formatPrintRangeLabel(request.range);
 
   useEffect(() => {
     const originalTitle = document.title;
@@ -44,7 +45,7 @@ export default function PrintReport({
           <section key={r.student.id} className={`p-6 ${i > 0 ? "break-before-page" : ""}`}>
             <h1 className="text-xl font-bold">{r.student.name}</h1>
             <p className="mb-4 text-sm text-gray-600">
-              {r.classRoom.name} · {request.range.label}
+              {r.classRoom.name} · {rangeLabel}
             </p>
 
             <table className="w-full text-sm">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrintDocumentTitle, buildPrintReports } from "./printReport";
+import { buildPrintDocumentTitle, buildPrintReports, formatPrintRangeLabel } from "./printReport";
 import type { PrintRequest } from "./printReport";
 import type { AppEvent, ClassRoom, Student } from "../types";
 import type { DateRange } from "./time";
@@ -87,16 +87,63 @@ describe("buildPrintReports", () => {
 describe("buildPrintDocumentTitle", () => {
   it("names the class for a single-class scope", () => {
     const request: PrintRequest = { scope: "class", classId: "c1", range };
-    expect(buildPrintDocumentTitle(request, [classA])).toBe("ICOT Report · Period 1 · January");
+    expect(buildPrintDocumentTitle(request, [classA])).toBe("ICOT Report · Period 1 · January 2026");
   });
 
   it("says 'All classes' for the all-classes scope, regardless of which classes are passed", () => {
     const request: PrintRequest = { scope: "all", classId: null, range };
-    expect(buildPrintDocumentTitle(request, [classA])).toBe("ICOT Report · All classes · January");
+    expect(buildPrintDocumentTitle(request, [classA])).toBe("ICOT Report · All classes · January 2026");
   });
 
   it("falls back to a generic label if the scoped class list is empty", () => {
     const request: PrintRequest = { scope: "class", classId: "missing", range };
-    expect(buildPrintDocumentTitle(request, [])).toBe("ICOT Report · Class · January");
+    expect(buildPrintDocumentTitle(request, [])).toBe("ICOT Report · Class · January 2026");
+  });
+});
+
+describe("formatPrintRangeLabel", () => {
+  it("formats a single-day range (e.g. Today/Yesterday) as one full date", () => {
+    const today: DateRange = {
+      start: new Date(2026, 8, 10, 0, 0, 0),
+      end: new Date(2026, 8, 10, 23, 59, 59),
+      label: "Today",
+    };
+    expect(formatPrintRangeLabel(today)).toBe("September 10, 2026");
+  });
+
+  it("formats a range confined to one calendar month (e.g. This month) as \"Month Year\"", () => {
+    const thisMonthSoFar: DateRange = {
+      start: new Date(2026, 8, 1, 0, 0, 0),
+      end: new Date(2026, 8, 12, 23, 59, 59), // partway through the month
+      label: "This month",
+    };
+    expect(formatPrintRangeLabel(thisMonthSoFar)).toBe("September 2026");
+  });
+
+  it("formats a full calendar month the same way as a partial one", () => {
+    const wholeMonth: DateRange = {
+      start: new Date(2026, 8, 1, 0, 0, 0),
+      end: new Date(2026, 8, 30, 23, 59, 59),
+      label: "September",
+    };
+    expect(formatPrintRangeLabel(wholeMonth)).toBe("September 2026");
+  });
+
+  it("formats a range spanning multiple months as a full date range", () => {
+    const semester: DateRange = {
+      start: new Date(2026, 7, 15, 0, 0, 0), // Aug 15 — not the 1st, so not month-collapsed
+      end: new Date(2026, 8, 10, 0, 0, 0),
+      label: "custom",
+    };
+    expect(formatPrintRangeLabel(semester)).toBe("August 15, 2026 – September 10, 2026");
+  });
+
+  it("formats a range that starts on the 1st but spans into a later month as a full date range", () => {
+    const schoolYear: DateRange = {
+      start: new Date(2026, 7, 1, 0, 0, 0), // Aug 1
+      end: new Date(2026, 8, 12, 0, 0, 0), // Sep 12 — different month than start
+      label: "This school year",
+    };
+    expect(formatPrintRangeLabel(schoolYear)).toBe("August 1, 2026 – September 12, 2026");
   });
 });
