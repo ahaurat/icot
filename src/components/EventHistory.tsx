@@ -2,15 +2,9 @@ import { useMemo, useState } from "react";
 import type { AppEvent, CategoryKey } from "../types";
 import { CATEGORIES, CATEGORY_BY_KEY } from "../constants/categories";
 import { useAppStore } from "../state/useAppStore";
-import { elapsedSeconds, formatDuration } from "../utils/time";
+import { describeEventDuration } from "../utils/time";
 import CategoryPill from "./CategoryPill";
 import EditEventDialog from "./EditEventDialog";
-
-function describe(e: AppEvent): string {
-  if (e.type === "count") return "1×";
-  if (e.open) return `${formatDuration(elapsedSeconds(e.startedAt))} (running)`;
-  return formatDuration(e.durationSeconds ?? 0);
-}
 
 export default function EventHistory({ studentId }: { studentId: string }) {
   const events = useAppStore((s) => s.events);
@@ -82,7 +76,7 @@ export default function EventHistory({ studentId }: { studentId: string }) {
                   style={{ backgroundColor: cat.color }}
                 />
                 <span className="w-24 shrink-0 font-medium">{cat.label}</span>
-                <span className="w-28 shrink-0 tabular-nums">{describe(e)}</span>
+                <span className="w-28 shrink-0 tabular-nums">{describeEventDuration(e)}</span>
                 <span className="flex-1 text-right text-xs text-gray-500">
                   {d.toLocaleDateString()}{" "}
                   {d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}

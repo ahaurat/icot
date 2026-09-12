@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAppStore } from "./state/useAppStore";
 import { useAuth } from "./state/useAuth";
 import Header from "./components/Header";
@@ -6,7 +6,9 @@ import SeatingChart from "./components/SeatingChart";
 import StudentModal from "./components/StudentModal";
 import SettingsModal from "./components/SettingsModal";
 import SummaryModal from "./components/SummaryModal";
+import PrintReport from "./components/PrintReport";
 import LoginScreen from "./components/LoginScreen";
+import type { PrintRequest } from "./utils/printReport";
 
 function Centered({ children }: { children: ReactNode }) {
   return <div className="flex h-full items-center justify-center text-gray-500">{children}</div>;
@@ -32,6 +34,8 @@ function MainApp() {
   const [editSeating, setEditSeating] = useState(false);
   const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
   const [pickNonce, setPickNonce] = useState(0);
+  const [printRequest, setPrintRequest] = useState<PrintRequest | null>(null);
+  const handlePrintDone = useCallback(() => setPrintRequest(null), []);
 
   useEffect(() => {
     void init();
@@ -71,44 +75,50 @@ function MainApp() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-4">
-      <Header
-        editSeating={editSeating}
-        onToggleEditSeating={() => setEditSeating((v) => !v)}
-        onOpenSummary={() => setSummaryOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onPickedStudent={handlePickedStudent}
-      />
-
-      {error && (
-        <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {editSeating && (
-        <p className="mb-3 rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Drag students between desks to rearrange seats. Click “Done moving seats” when finished.
-        </p>
-      )}
-
-      <SeatingChart
-        editMode={editSeating}
-        onOpenStudent={setSelectedStudentId}
-        pickedStudentId={pickedStudentId}
-        pickNonce={pickNonce}
-      />
-
-      {selectedStudentId && !editSeating && (
-        <StudentModal
-          studentId={selectedStudentId}
-          onClose={() => setSelectedStudentId(null)}
+    <>
+      <div className="mx-auto max-w-5xl p-4 print:hidden">
+        <Header
+          editSeating={editSeating}
+          onToggleEditSeating={() => setEditSeating((v) => !v)}
+          onOpenSummary={() => setSummaryOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onPickedStudent={handlePickedStudent}
         />
-      )}
 
-      {summaryOpen && <SummaryModal onClose={() => setSummaryOpen(false)} />}
+        {error && (
+          <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
-    </div>
+        {editSeating && (
+          <p className="mb-3 rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Drag students between desks to rearrange seats. Click “Done moving seats” when finished.
+          </p>
+        )}
+
+        <SeatingChart
+          editMode={editSeating}
+          onOpenStudent={setSelectedStudentId}
+          pickedStudentId={pickedStudentId}
+          pickNonce={pickNonce}
+        />
+
+        {selectedStudentId && !editSeating && (
+          <StudentModal
+            studentId={selectedStudentId}
+            onClose={() => setSelectedStudentId(null)}
+          />
+        )}
+
+        {summaryOpen && (
+          <SummaryModal onClose={() => setSummaryOpen(false)} onPrint={setPrintRequest} />
+        )}
+
+        {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      </div>
+
+      {printRequest && <PrintReport request={printRequest} onDone={handlePrintDone} />}
+    </>
   );
 }

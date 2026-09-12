@@ -13,6 +13,7 @@ export function withSettingsDefaults(s: Partial<Settings> | null | undefined): S
     seatLayout: s?.seatLayout ? normalizeSeatLayout(s.seatLayout) : DEFAULT_SEAT_LAYOUT,
     randomPicker: s?.randomPicker ?? { mode: "random", resetDaily: true },
     pickerProgress: s?.pickerProgress ?? {},
+    viewPeriod: s?.viewPeriod ?? { mode: "year", customStart: "", customEnd: "" },
   };
 }
 

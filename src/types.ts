@@ -75,6 +75,14 @@ export interface ClassPickerProgress {
   cycleStartDate: string;
 }
 
+export interface ViewPeriod {
+  mode: "year" | "custom";
+  /** YYYY-MM-DD; only meaningful when mode === "custom". */
+  customStart: string;
+  /** YYYY-MM-DD; only meaningful when mode === "custom". */
+  customEnd: string;
+}
+
 export interface Settings {
   /** ISO date (YYYY-MM-DD) marking the start of the tracked school year. */
   schoolYearStart: string;
@@ -84,6 +92,8 @@ export interface Settings {
   randomPicker: RandomPickerSettings;
   /** Per-class cycle progress for the random picker, keyed by classId. */
   pickerProgress: Record<string, ClassPickerProgress>;
+  /** Which date range the standing "Period" totals column reflects. */
+  viewPeriod: ViewPeriod;
 }
 
 export interface AppData {

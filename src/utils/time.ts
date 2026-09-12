@@ -1,6 +1,8 @@
 // Time + date helpers. All "today"/"year" comparisons use the local timezone,
 // matching how a teacher thinks about a school day.
 
+import type { AppEvent, ViewPeriod } from "../types";
+
 /** Human-readable duration, e.g. 95 -> "1m 35s", 3725 -> "1h 2m 5s". */
 export function formatDuration(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));
@@ -32,16 +34,6 @@ export function todayDateKey(): string {
 export function parseDateOnlyLocal(dateOnly: string): Date {
   const [y, m, d] = dateOnly.split("-").map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0);
-}
-
-/** Whether an ISO timestamp falls on today's local calendar day. */
-export function isToday(iso: string): boolean {
-  return localDateKey(new Date(iso)) === todayDateKey();
-}
-
-/** Whether an ISO timestamp is on/after the school-year start (local midnight). */
-export function isInSchoolYear(iso: string, schoolYearStart: string): boolean {
-  return new Date(iso).getTime() >= parseDateOnlyLocal(schoolYearStart).getTime();
 }
 
 /**
@@ -76,6 +68,18 @@ export function formatMinutesShort(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   if (m < 1) return totalSeconds > 0 ? "<1m" : "0m";
   return `${m}m`;
+}
+
+/** Compact month/day for narrow UI, e.g. new Date(2026, 0, 20) -> "1/20". */
+export function formatCompactDate(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+/** Human-readable value for one event: a tally count, or its duration (elapsed-so-far if still running). */
+export function describeEventDuration(e: AppEvent): string {
+  if (e.type === "count") return "1×";
+  if (e.open) return `${formatDuration(elapsedSeconds(e.startedAt))} (running)`;
+  return formatDuration(e.durationSeconds ?? 0);
 }
 
 // ---- Date ranges (for the Summary view + History filter) ----
@@ -166,4 +170,19 @@ export function toDatetimeLocalValue(iso: string): string {
 /** <input type="datetime-local"> value -> ISO timestamp. */
 export function fromDatetimeLocalValue(value: string): string {
   return new Date(value).toISOString();
+}
+
+/**
+ * The date range the standing "Period" totals column reflects: the teacher's
+ * custom start/end when configured, otherwise the whole school year to date.
+ */
+export function resolveViewPeriodRange(
+  viewPeriod: ViewPeriod,
+  schoolYearStart: string,
+  now: Date = new Date()
+): DateRange {
+  if (viewPeriod.mode === "custom" && viewPeriod.customStart && viewPeriod.customEnd) {
+    return customRange(viewPeriod.customStart, viewPeriod.customEnd);
+  }
+  return presetRange("year", schoolYearStart, now);
 }

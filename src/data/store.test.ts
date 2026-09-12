@@ -36,4 +36,19 @@ describe("withSettingsDefaults", () => {
       "class-1": { calledStudentIds: ["s1"], cycleStartDate: "2025-09-01" },
     });
   });
+  it("supplies default view period settings when none are stored", () => {
+    const s = withSettingsDefaults({ schoolYearStart: "2025-08-01" });
+    expect(s.viewPeriod).toEqual({ mode: "year", customStart: "", customEnd: "" });
+  });
+  it("preserves provided view period settings", () => {
+    const s = withSettingsDefaults({
+      schoolYearStart: "2025-08-01",
+      viewPeriod: { mode: "custom", customStart: "2026-01-20", customEnd: "2026-06-05" },
+    });
+    expect(s.viewPeriod).toEqual({
+      mode: "custom",
+      customStart: "2026-01-20",
+      customEnd: "2026-06-05",
+    });
+  });
 });
