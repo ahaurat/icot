@@ -126,6 +126,16 @@ brand-new project — see "Enabling Supabase" above).
 
 ### First-time setup (once per project)
 
+`SUPABASE_ACCESS_TOKEN` should be a [scoped personal access token](https://supabase.com/docs/guides/platform/personal-access-tokens)
+(dashboard → Account → Access Tokens), limited to the production and dev
+projects, with these permissions — anything less and `link`/`db push` fail
+with an authorization error:
+
+- **Project Settings**: Read
+- **Migrations**: Read-write
+- **API Keys**: Read
+- **API Key Secrets**: Read
+
 Before the workflow can run against a project, link it locally and mark the
 schema that's already live as already applied — this is what stops `db push`
 from trying to `create table` against tables that already exist:
@@ -158,7 +168,14 @@ can manage its schema.
 The workflow requires these repo secrets (**Settings → Secrets and variables
 → Actions**), added once when this is first set up:
 `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROD_PROJECT_REF`, `SUPABASE_PROD_DB_PASSWORD`,
-`SUPABASE_DEV_PROJECT_REF`, `SUPABASE_DEV_DB_PASSWORD`.
+`SUPABASE_PROD_DB_URL`, `SUPABASE_DEV_PROJECT_REF`, `SUPABASE_DEV_DB_PASSWORD`,
+`SUPABASE_DEV_DB_URL`.
+
+`*_DB_URL` must be each project's **Session pooler** connection string (dashboard
+→ **Connect** → **Session pooler** tab), not the direct connection — GitHub
+Actions runners are IPv4-only, and a project's direct connection
+(`db.<ref>.supabase.co`) only resolves over IPv6. `link` doesn't need the
+pooler (it only talks to the Management API), but `db push` does.
 
 ## Local development vs. production data
 
