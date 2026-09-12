@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildPrintReports } from "./printReport";
+import { buildPrintDocumentTitle, buildPrintReports } from "./printReport";
+import type { PrintRequest } from "./printReport";
 import type { AppEvent, ClassRoom, Student } from "../types";
 import type { DateRange } from "./time";
 
@@ -80,5 +81,22 @@ describe("buildPrintReports", () => {
     const reports = buildPrintReports([classA], [charlie, zach, bob, amy], [], range);
     // Expected: bob (seat 0), charlie (seat 5), amy (unseated, alpha), zach (unseated, alpha)
     expect(reports.map((r) => r.student.name)).toEqual(["Bob", "Charlie", "Amy", "Zach"]);
+  });
+});
+
+describe("buildPrintDocumentTitle", () => {
+  it("names the class for a single-class scope", () => {
+    const request: PrintRequest = { scope: "class", classId: "c1", range };
+    expect(buildPrintDocumentTitle(request, [classA])).toBe("ICOT Report · Period 1 · January");
+  });
+
+  it("says 'All classes' for the all-classes scope, regardless of which classes are passed", () => {
+    const request: PrintRequest = { scope: "all", classId: null, range };
+    expect(buildPrintDocumentTitle(request, [classA])).toBe("ICOT Report · All classes · January");
+  });
+
+  it("falls back to a generic label if the scoped class list is empty", () => {
+    const request: PrintRequest = { scope: "class", classId: "missing", range };
+    expect(buildPrintDocumentTitle(request, [])).toBe("ICOT Report · Class · January");
   });
 });

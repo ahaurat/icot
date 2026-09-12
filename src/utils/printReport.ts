@@ -37,6 +37,15 @@ function orderedActiveStudents(students: Student[], classId: string): Student[] 
 }
 
 /**
+ * A document title for the print job, so a browser's "Save as PDF" dialog
+ * suggests something useful instead of the app's static page title.
+ */
+export function buildPrintDocumentTitle(request: PrintRequest, scopedClasses: ClassRoom[]): string {
+  const scopeLabel = request.scope === "all" ? "All classes" : scopedClasses[0]?.name ?? "Class";
+  return `ICOT Report · ${scopeLabel} · ${request.range.label}`;
+}
+
+/**
  * Builds one printable report per active student across the given classes,
  * for the given range. Archived classes are always excluded; classes are
  * ordered by period, students within a class by seat order.

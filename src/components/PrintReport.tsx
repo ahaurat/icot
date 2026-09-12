@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { CATEGORY_BY_KEY, COUNT_CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import { useAppStore } from "../state/useAppStore";
 import { formatDuration } from "../utils/time";
-import { buildPrintReports } from "../utils/printReport";
+import { buildPrintDocumentTitle, buildPrintReports } from "../utils/printReport";
 import type { PrintRequest } from "../utils/printReport";
 
 function formatCategoryTotal(value: number, type: "timed" | "count"): string {
@@ -26,9 +26,14 @@ export default function PrintReport({
   const reports = buildPrintReports(scopedClasses, students, events, request.range);
 
   useEffect(() => {
+    const originalTitle = document.title;
+    document.title = buildPrintDocumentTitle(request, scopedClasses);
     window.addEventListener("afterprint", onDone);
     window.print();
-    return () => window.removeEventListener("afterprint", onDone);
+    return () => {
+      window.removeEventListener("afterprint", onDone);
+      document.title = originalTitle;
+    };
   }, [onDone, request]);
 
   return (
