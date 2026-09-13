@@ -9,18 +9,18 @@ import { withSettingsDefaults } from "./store";
 // (or Manage roster). No real student data ships in this repo.
 const DEMO_CLASS = "Period 1";
 const DEMO_STUDENTS = [
-  "Ada Lovelace",
-  "Alan Turing",
-  "Grace Hopper",
-  "Katherine Johnson",
-  "Rosalind Franklin",
-  "Charles Babbage",
-  "Marie Curie",
-  "Nikola Tesla",
-  "Hedy Lamarr",
-  "Claude Shannon",
-  "Dorothy Vaughan",
-  "George Boole",
+  { firstName: "Ada", lastName: "Lovelace" },
+  { firstName: "Alan", lastName: "Turing" },
+  { firstName: "Grace", lastName: "Hopper" },
+  { firstName: "Katherine", lastName: "Johnson" },
+  { firstName: "Rosalind", lastName: "Franklin" },
+  { firstName: "Charles", lastName: "Babbage" },
+  { firstName: "Marie", lastName: "Curie" },
+  { firstName: "Nikola", lastName: "Tesla" },
+  { firstName: "Hedy", lastName: "Lamarr" },
+  { firstName: "Claude", lastName: "Shannon" },
+  { firstName: "Dorothy", lastName: "Vaughan" },
+  { firstName: "George", lastName: "Boole" },
 ];
 
 /** Build the initial AppData (used the first time the app runs with empty storage). */
@@ -32,10 +32,11 @@ export function buildSeedData(): AppData {
 
   // Seat the demo students along the default seat order (seat 1, 2, 3, …).
   const placement = placementForLayout(DEFAULT_SEAT_LAYOUT, DEMO_STUDENTS.length);
-  const students: Student[] = DEMO_STUDENTS.map((name, i) => ({
+  const students: Student[] = DEMO_STUDENTS.map(({ firstName, lastName }, i) => ({
     id: newId(),
     classId,
-    name,
+    firstName,
+    lastName,
     seatIndex: placement[i],
     active: true,
     groupColor: null,

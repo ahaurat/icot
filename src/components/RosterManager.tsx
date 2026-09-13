@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useAppStore } from "../state/useAppStore";
+import { studentFullName } from "../utils/studentName";
 import ConfirmDialog from "./ConfirmDialog";
 
 export default function RosterManager({ classId }: { classId: string }) {
@@ -11,7 +12,8 @@ export default function RosterManager({ classId }: { classId: string }) {
   const restoreStudent = useAppStore((s) => s.restoreStudent);
   const deleteStudentPermanently = useAppStore((s) => s.deleteStudentPermanently);
 
-  const [newName, setNewName] = useState("");
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
   const [newSeat, setNewSeat] = useState<string>("");
   const [pendingDeleteStudentId, setPendingDeleteStudentId] = useState<string | null>(null);
 
@@ -28,11 +30,13 @@ export default function RosterManager({ classId }: { classId: string }) {
   }, [active, seatCount]);
 
   function handleAdd() {
-    const name = newName.trim();
-    if (!name) return;
+    const firstName = newFirstName.trim();
+    const lastName = newLastName.trim();
+    if (!firstName && !lastName) return;
     const seat = newSeat === "" ? null : Number(newSeat);
-    addStudent(classId, name, seat);
-    setNewName("");
+    addStudent(classId, firstName, lastName, seat);
+    setNewFirstName("");
+    setNewLastName("");
     setNewSeat("");
   }
 
@@ -44,9 +48,16 @@ export default function RosterManager({ classId }: { classId: string }) {
         <div className="flex flex-wrap items-center gap-2">
           <input
             className="flex-1 rounded border p-2 text-sm"
-            placeholder="Student name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            placeholder="First name"
+            value={newFirstName}
+            onChange={(e) => setNewFirstName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          />
+          <input
+            className="flex-1 rounded border p-2 text-sm"
+            placeholder="Last name"
+            value={newLastName}
+            onChange={(e) => setNewLastName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           />
           <select
@@ -81,10 +92,20 @@ export default function RosterManager({ classId }: { classId: string }) {
             <div key={s.id} className="flex items-center gap-2 px-3 py-1.5">
               <input
                 className="flex-1 rounded border px-2 py-1 text-sm"
-                defaultValue={s.name}
+                defaultValue={s.firstName}
+                placeholder="First name"
                 onBlur={(e) => {
                   const v = e.target.value.trim();
-                  if (v && v !== s.name) renameStudent(s.id, v);
+                  if (v && v !== s.firstName) renameStudent(s.id, v, s.lastName);
+                }}
+              />
+              <input
+                className="flex-1 rounded border px-2 py-1 text-sm"
+                defaultValue={s.lastName}
+                placeholder="Last name"
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== s.lastName) renameStudent(s.id, s.firstName, v);
                 }}
               />
               <span className="w-16 shrink-0 text-xs text-gray-500">
@@ -112,7 +133,7 @@ export default function RosterManager({ classId }: { classId: string }) {
           <div className="max-h-40 divide-y overflow-y-auto rounded border bg-gray-50">
             {inactive.map((s) => (
               <div key={s.id} className="flex items-center gap-2 px-3 py-1.5 text-sm">
-                <span className="flex-1 text-gray-600">{s.name}</span>
+                <span className="flex-1 text-gray-600">{studentFullName(s)}</span>
                 <button
                   type="button"
                   onClick={() => restoreStudent(s.id)}
@@ -140,7 +161,7 @@ export default function RosterManager({ classId }: { classId: string }) {
           return (
             <ConfirmDialog
               title="Delete student"
-              message={`Permanently delete ${s.name} and all their history? This cannot be undone.`}
+              message={`Permanently delete ${studentFullName(s)} and all their history? This cannot be undone.`}
               confirmLabel="Delete"
               danger
               onConfirm={() => {

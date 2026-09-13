@@ -25,7 +25,8 @@ create table if not exists students (
   id          uuid primary key,
   owner_id    uuid not null default auth.uid(),
   class_id    uuid not null references classes(id) on delete cascade,
-  name        text not null,
+  first_name  text not null,
+  last_name   text not null,
   seat_index  int,
   active      boolean not null default true,
   group_color text

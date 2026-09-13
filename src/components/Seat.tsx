@@ -6,6 +6,7 @@ import { useAppStore } from "../state/useAppStore";
 import { useNowTick } from "../state/useTimers";
 import { useStudentTotals } from "../hooks/useAggregates";
 import { elapsedSeconds, formatDuration, formatMinutesShort } from "../utils/time";
+import { studentFullName } from "../utils/studentName";
 
 interface SeatProps {
   index: number;
@@ -83,7 +84,7 @@ function SeatContent({
         {...attributes}
         className="flex h-full cursor-grab items-center justify-center px-1 font-medium active:cursor-grabbing"
       >
-        {student.name}
+        {studentFullName(student)}
       </div>
     );
   }
@@ -94,7 +95,7 @@ function SeatContent({
       onClick={() => onOpen(student.id)}
       className="flex h-full w-full cursor-pointer flex-col items-center justify-center px-1"
     >
-      <span className="font-medium leading-tight">{student.name}</span>
+      <span className="font-medium leading-tight">{studentFullName(student)}</span>
 
       {openEvent ? (
         <span className="mt-1 flex flex-col items-center gap-1">
