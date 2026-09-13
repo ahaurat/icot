@@ -56,8 +56,8 @@ interface AppState extends AppData {
   deleteEvent: (id: string) => void;
 
   // Roster + seating
-  addStudent: (classId: string, name: string, seatIndex: number | null) => void;
-  renameStudent: (id: string, name: string) => void;
+  addStudent: (classId: string, firstName: string, lastName: string, seatIndex: number | null) => void;
+  renameStudent: (id: string, firstName: string, lastName: string) => void;
   moveStudent: (id: string, seatIndex: number) => void;
   removeStudent: (id: string) => void;
   restoreStudent: (id: string) => void;
@@ -251,11 +251,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     persist(store.deleteEvent(id));
   },
 
-  addStudent(classId, name, seatIndex) {
+  addStudent(classId, firstName, lastName, seatIndex) {
     const student: Student = {
       id: newId(),
       classId,
-      name: name.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       seatIndex,
       active: true,
     };
@@ -263,10 +264,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     persist(store.upsertStudent(student));
   },
 
-  renameStudent(id, name) {
+  renameStudent(id, firstName, lastName) {
     const student = get().students.find((s) => s.id === id);
     if (!student) return;
-    const updated = { ...student, name: name.trim() };
+    const updated = { ...student, firstName: firstName.trim(), lastName: lastName.trim() };
     set((s) => ({ students: s.students.map((x) => (x.id === id ? updated : x)) }));
     persist(store.upsertStudent(updated));
   },
@@ -335,7 +336,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const newStudents: Student[] = [];
     for (const roster of rosters) {
       const classId = newId();
-      const placement = placementForLayout(layout, roster.names.length);
+      const placement = placementForLayout(layout, roster.students.length);
       const maxIndex = placement.reduce((m, i) => Math.max(m, i), -1);
       const seatRows = Math.max(layout.rows, Math.ceil((maxIndex + 1) / layout.cols));
       newClasses.push({
@@ -345,11 +346,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         seatCols: layout.cols,
         archivedAt: null,
       });
-      roster.names.forEach((name, i) => {
+      roster.students.forEach((student, i) => {
         newStudents.push({
           id: newId(),
           classId,
-          name,
+          firstName: student.firstName,
+          lastName: student.lastName,
           seatIndex: placement[i],
           active: true,
         });
