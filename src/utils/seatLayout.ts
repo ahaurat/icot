@@ -91,9 +91,14 @@ export function planReseat(
 
 /**
  * Reorder desk indices into a boustrophedon (row-by-row, alternating
- * direction) sweep, so a contiguous slice of the result is always a
- * spatially adjacent run of desks — even when the input order (e.g. a
- * teacher's custom seat-order numbering) jumps between rows or columns.
+ * direction) sweep, so a contiguous slice of the result stays close together
+ * spatially — even when the input order (e.g. a teacher's custom seat-order
+ * numbering) jumps between rows or columns. This is a best-effort heuristic,
+ * not a guarantee: within a dense row (or a row with a gap that runs the
+ * full width, like a center aisle applied to every row) it always lands on a
+ * real adjacent step, but a row with desks on both sides of a gap (e.g. two
+ * far-apart blocks in the same row) is swept straight across that gap, so a
+ * slice can still land two students on opposite sides of it.
  */
 export function spatialSweepOrder(deskIndices: number[], layout: SeatLayout): number[] {
   const colsByRow = new Map<number, number[]>();

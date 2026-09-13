@@ -40,10 +40,11 @@ export interface GroupSeatAssignment {
 /**
  * Assign every student a seat and a group color: students are partitioned via
  * `buildGroups`, then groups are laid onto consecutive slices of `seatOrder`.
- * The caller must pass a `seatOrder` already arranged so any consecutive
- * slice is a spatially adjacent run of desks (see `spatialSweepOrder` in
- * seatLayout.ts) — this function only handles grouping + sequential
- * assignment, not spatial reasoning.
+ * The caller should pass a `seatOrder` arranged so a consecutive slice is
+ * usually a spatially close run of desks (see `spatialSweepOrder` in
+ * seatLayout.ts, including its documented limits for gapped rows) — this
+ * function only handles grouping + sequential assignment, not spatial
+ * reasoning.
  */
 export function planGroupSeating(
   studentIds: string[],

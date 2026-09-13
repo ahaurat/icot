@@ -128,6 +128,20 @@ describe("spatialSweepOrder", () => {
       expect(adjacent).toBe(true);
     }
   });
+
+  it("documents its limit: a row with desks on both sides of a gap is swept straight across it", () => {
+    // A 6-col grid with a two-column gap in the middle of every row (desks at
+    // cols 0,1 and 4,5, cols 2-3 are aisles) — a real, supported layout shape.
+    const desks = [0, 1, 4, 5];
+    const layout: SeatLayout = { rows: 1, cols: 6, seatOrder: desks };
+    const result = spatialSweepOrder(desks, layout);
+    // Ideally this row would sweep as two separate near clusters; instead the
+    // single row's columns are all swept together, landing col 1 next to
+    // col 4 even though they're on opposite sides of the gap.
+    expect(result).toEqual([0, 1, 4, 5]);
+    const gapCrossed = result.some((seat, i) => i > 0 && Math.abs(seat - result[i - 1]) > 1);
+    expect(gapCrossed).toBe(true);
+  });
 });
 
 describe("planReseat", () => {
