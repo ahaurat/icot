@@ -17,6 +17,7 @@ import { getDataStore, withSettingsDefaults } from "../data/store";
 import { newId } from "../utils/id";
 import { elapsedSeconds, todayDateKey } from "../utils/time";
 import { isPickableStudent, pickStudent } from "../utils/randomPicker";
+import { shuffleSeats } from "../utils/seatRandomizer";
 import { sortByPeriod } from "../utils/classSort";
 
 /** The active class to default to: the lowest-period one, so period order (not storage order) wins. */
@@ -79,6 +80,10 @@ interface AppState extends AppData {
   // Random student picker
   setRandomPickerSettings: (patch: Partial<RandomPickerSettings>) => void;
   pickRandomStudent: (classId: string) => string | null;
+
+  // Seat randomization
+  randomizeSeats: (classId: string, persistMode: "save" | "today") => void;
+  revertStaleSeatingSnapshots: () => void;
 }
 
 let initStarted = false;
@@ -104,6 +109,7 @@ async function loadWithRetry(retriesLeft: number): Promise<void> {
       loaded: true,
       currentClassId: defaultActiveClassId(data.classes),
     });
+    useAppStore.getState().revertStaleSeatingSnapshots();
   } catch (err) {
     if (retriesLeft > 0) {
       await new Promise((r) => setTimeout(r, LOAD_RETRY_DELAY_MS));
@@ -452,6 +458,79 @@ export const useAppStore = create<AppState>((set, get) => ({
       persist(store.saveSettings(settings));
     }
     return result.studentId;
+  },
+
+  randomizeSeats(classId, persistMode) {
+    const seated = get()
+      .students.filter((s) => s.classId === classId && isPickableStudent(s))
+      .map((s) => ({ id: s.id, seatIndex: s.seatIndex! }));
+    if (seated.length === 0) return;
+
+    const settings = get().settings;
+    const today = todayDateKey();
+    let seatingSnapshots = settings.seatingSnapshots;
+
+    if (persistMode === "save") {
+      if (seatingSnapshots[classId]) {
+        const next = { ...seatingSnapshots };
+        delete next[classId];
+        seatingSnapshots = next;
+      }
+    } else {
+      const existing = seatingSnapshots[classId];
+      if (!existing || existing.savedAt !== today) {
+        const seats: Record<string, number> = {};
+        for (const s of seated) seats[s.id] = s.seatIndex;
+        seatingSnapshots = { ...seatingSnapshots, [classId]: { savedAt: today, seats } };
+      }
+    }
+
+    const shuffled = shuffleSeats(seated);
+    const seatById = new Map(shuffled.map((s) => [s.id, s.seatIndex]));
+    const updatedStudents = get().students.map((s) =>
+      seatById.has(s.id) ? { ...s, seatIndex: seatById.get(s.id)! } : s
+    );
+    const newSettings = { ...settings, seatingSnapshots };
+
+    set({ students: updatedStudents, settings: newSettings });
+    for (const s of shuffled) {
+      const student = updatedStudents.find((x) => x.id === s.id);
+      if (student) persist(store.upsertStudent(student));
+    }
+    if (newSettings.seatingSnapshots !== settings.seatingSnapshots) {
+      persist(store.saveSettings(newSettings));
+    }
+  },
+
+  revertStaleSeatingSnapshots() {
+    const settings = get().settings;
+    const today = todayDateKey();
+    const staleClassIds = Object.keys(settings.seatingSnapshots).filter(
+      (classId) => settings.seatingSnapshots[classId].savedAt !== today
+    );
+    if (staleClassIds.length === 0) return;
+
+    const remainingSnapshots = { ...settings.seatingSnapshots };
+    const changedStudents: Student[] = [];
+
+    for (const classId of staleClassIds) {
+      const snapshot = remainingSnapshots[classId];
+      delete remainingSnapshots[classId];
+      for (const student of get().students) {
+        if (student.classId !== classId || !student.active) continue;
+        const savedSeatIndex = snapshot.seats[student.id];
+        if (savedSeatIndex === undefined || savedSeatIndex === student.seatIndex) continue;
+        changedStudents.push({ ...student, seatIndex: savedSeatIndex });
+      }
+    }
+
+    const newSettings = { ...settings, seatingSnapshots: remainingSnapshots };
+    set((state) => ({
+      settings: newSettings,
+      students: state.students.map((x) => changedStudents.find((u) => u.id === x.id) ?? x),
+    }));
+    persist(store.saveSettings(newSettings));
+    changedStudents.forEach((s) => persist(store.upsertStudent(s)));
   },
 
   importData(data) {
