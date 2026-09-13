@@ -127,6 +127,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     seatLayout: DEFAULT_SEAT_LAYOUT,
     randomPicker: { mode: "random", resetDaily: true },
     pickerProgress: {},
+    seatingSnapshots: {},
   },
   loaded: false,
   error: null,
@@ -229,6 +230,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       name: name.trim(),
       seatIndex,
       active: true,
+      groupColor: null,
     };
     set((s) => ({ students: [...s.students, student] }));
     persist(store.upsertStudent(student));
@@ -323,6 +325,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           name,
           seatIndex: placement[i],
           active: true,
+          groupColor: null,
         });
       });
     }

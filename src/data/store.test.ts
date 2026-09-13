@@ -36,4 +36,17 @@ describe("withSettingsDefaults", () => {
       "class-1": { calledStudentIds: ["s1"], cycleStartDate: "2025-09-01" },
     });
   });
+  it("supplies default seating snapshots when none are stored", () => {
+    const s = withSettingsDefaults({ schoolYearStart: "2025-08-01" });
+    expect(s.seatingSnapshots).toEqual({});
+  });
+  it("preserves provided seating snapshots", () => {
+    const s = withSettingsDefaults({
+      schoolYearStart: "2025-08-01",
+      seatingSnapshots: { "class-1": { savedAt: "2025-09-01", seats: { s1: 3 } } },
+    });
+    expect(s.seatingSnapshots).toEqual({
+      "class-1": { savedAt: "2025-09-01", seats: { s1: 3 } },
+    });
+  });
 });

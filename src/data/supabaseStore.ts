@@ -5,6 +5,7 @@ import type {
   ClassRoom,
   RandomPickerSettings,
   SeatLayout,
+  SeatingSnapshot,
   Settings,
   Student,
 } from "../types";
@@ -26,6 +27,7 @@ interface StudentRow {
   name: string;
   seat_index: number | null;
   active: boolean;
+  group_color: string | null;
 }
 interface EventRow {
   id: string;
@@ -45,6 +47,7 @@ interface SettingsRow {
   seat_layout: SeatLayout | null;
   random_picker: RandomPickerSettings | null;
   picker_progress: Record<string, ClassPickerProgress> | null;
+  seating_snapshots: Record<string, SeatingSnapshot> | null;
 }
 
 const classToRow = (c: ClassRoom): ClassRow => ({
@@ -68,6 +71,7 @@ const studentToRow = (s: Student): StudentRow => ({
   name: s.name,
   seat_index: s.seatIndex,
   active: s.active,
+  group_color: s.groupColor,
 });
 const rowToStudent = (r: StudentRow): Student => ({
   id: r.id,
@@ -75,6 +79,7 @@ const rowToStudent = (r: StudentRow): Student => ({
   name: r.name,
   seatIndex: r.seat_index,
   active: r.active,
+  groupColor: r.group_color ?? null,
 });
 
 const eventToRow = (e: AppEvent): EventRow => ({
@@ -153,6 +158,7 @@ export function createSupabaseStore(): DataStore {
                 seatLayout: (settings.data as SettingsRow).seat_layout ?? undefined,
                 randomPicker: (settings.data as SettingsRow).random_picker ?? undefined,
                 pickerProgress: (settings.data as SettingsRow).picker_progress ?? undefined,
+                seatingSnapshots: (settings.data as SettingsRow).seating_snapshots ?? undefined,
               }
             : null
         ),
@@ -198,6 +204,7 @@ export function createSupabaseStore(): DataStore {
           seat_layout: s.seatLayout,
           random_picker: s.randomPicker,
           picker_progress: s.pickerProgress,
+          seating_snapshots: s.seatingSnapshots,
         },
         { onConflict: "owner_id" }
       );

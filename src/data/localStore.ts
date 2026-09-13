@@ -12,7 +12,7 @@ function read(): AppData {
     return {
       // Coerce archivedAt for data written before the archive feature existed.
       classes: (parsed.classes ?? []).map((c) => ({ ...c, archivedAt: c.archivedAt ?? null })),
-      students: parsed.students ?? [],
+      students: (parsed.students ?? []).map((s) => ({ ...s, groupColor: s.groupColor ?? null })),
       events: parsed.events ?? [],
       settings: withSettingsDefaults(parsed.settings),
     };

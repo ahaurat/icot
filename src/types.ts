@@ -32,6 +32,8 @@ export interface Student {
   seatIndex: number | null;
   /** Soft-delete flag: inactive students keep their history but leave the chart. */
   active: boolean;
+  /** Background color for "Create groups" display, or null when not grouped. */
+  groupColor: string | null;
 }
 
 export interface AppEvent {
@@ -75,6 +77,13 @@ export interface ClassPickerProgress {
   cycleStartDate: string;
 }
 
+export interface SeatingSnapshot {
+  /** Local YYYY-MM-DD the snapshot was captured; used to detect the next calendar day. */
+  savedAt: string;
+  /** seatIndex per student id at the time "Randomize seats -> today only" was used. */
+  seats: Record<string, number>;
+}
+
 export interface Settings {
   /** ISO date (YYYY-MM-DD) marking the start of the tracked school year. */
   schoolYearStart: string;
@@ -84,6 +93,8 @@ export interface Settings {
   randomPicker: RandomPickerSettings;
   /** Per-class cycle progress for the random picker, keyed by classId. */
   pickerProgress: Record<string, ClassPickerProgress>;
+  /** Per-class "randomize seats -> today only" snapshot, keyed by classId. */
+  seatingSnapshots: Record<string, SeatingSnapshot>;
 }
 
 export interface AppData {
