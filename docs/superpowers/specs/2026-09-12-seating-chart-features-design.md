@@ -79,7 +79,7 @@ function buildGroups(studentIds: string[], targetSize: number): string[][]
 ```
 
 - `numGroups = Math.ceil(n / targetSize)` (minimum 1).
-- Shuffle `studentIds`, then distribute them across `numGroups` as evenly as possible (sizes differ by at most 1 — e.g. 17 students at target size 4 → groups of 5,4,4,4, not 4,4,4,4,1).
+- Shuffle `studentIds`, then distribute them across `numGroups` as evenly as possible via round-robin (sizes differ by at most 1 — e.g. 18 students at target size 4 → `numGroups = ceil(18/4) = 5` groups of sizes 4,4,4,3,3, not 4,4,4,4,+2 leftover).
 - Returns one array of student ids per group.
 
 **Seat placement**: compute `placementForLayout(seatLayout, n)` (existing helper in [seatLayout.ts](../../../src/utils/seatLayout.ts)) to get the first `n` seat-order positions. Assign group 1 to the first `sizes[0]` slots of that ordered list, group 2 to the next `sizes[1]`, and so on — so each group occupies a contiguous block along the room's existing seat order (whatever shape/aisles the teacher has configured).
