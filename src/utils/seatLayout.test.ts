@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
+import { DEFAULT_SEAT_LAYOUT, DEFAULT_SEAT_ORDER } from "../constants/seatOrder";
 import {
   clearOrder,
+  contiguousSegments,
   deskCount,
   isAisleCell,
   normalizeSeatLayout,
@@ -90,6 +91,33 @@ describe("clearOrder", () => {
   it("removes every desk", () => {
     const layout: SeatLayout = { rows: 2, cols: 2, seatOrder: [0, 1] };
     expect(clearOrder(layout)).toEqual({ rows: 2, cols: 2, seatOrder: [] });
+  });
+});
+
+describe("contiguousSegments", () => {
+  it("returns an empty array for no desks", () => {
+    expect(contiguousSegments([], 6)).toEqual([]);
+  });
+
+  it("keeps a single run together when every desk is grid-adjacent to the previous one", () => {
+    // Column C bottom-to-top: rows 5,4,3,2,1,0 at col 2 on a 6-col grid.
+    const column = [32, 26, 20, 14, 8, 2];
+    expect(contiguousSegments(column, 6)).toEqual([column]);
+  });
+
+  it("splits at a jump from the top of one column to the bottom of the next", () => {
+    const columnCThenE = [32, 26, 20, 14, 8, 2, 33, 27, 21, 15, 9, 3];
+    const result = contiguousSegments(columnCThenE, 6);
+    expect(result).toEqual([
+      [32, 26, 20, 14, 8, 2],
+      [33, 27, 21, 15, 9, 3],
+    ]);
+  });
+
+  it("matches DEFAULT_SEAT_ORDER's known column structure for its first 12 desks", () => {
+    const firstTwelve = DEFAULT_SEAT_ORDER.slice(0, 12);
+    const result = contiguousSegments(firstTwelve, 6);
+    expect(result.map((s) => s.length)).toEqual([6, 6]);
   });
 });
 

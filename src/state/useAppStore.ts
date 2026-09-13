@@ -10,7 +10,7 @@ import type {
 } from "../types";
 import { CATEGORY_BY_KEY } from "../constants/categories";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
-import { normalizeSeatLayout, placementForLayout, planReseat } from "../utils/seatLayout";
+import { contiguousSegments, normalizeSeatLayout, placementForLayout, planReseat } from "../utils/seatLayout";
 import { buildSeedData } from "../data/seed";
 import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
@@ -542,21 +542,37 @@ export const useAppStore = create<AppState>((set, get) => ({
       .sort((a, b) => a.seatIndex! - b.seatIndex!);
     if (seated.length === 0) return;
 
-    const groups = buildGroups(seated.map((s) => s.id), groupSize);
     const layout = get().settings.seatLayout;
-    const seatOrder = placementForLayout(layout, seated.length);
+    const targetSeats = placementForLayout(layout, seated.length);
+    const segments = contiguousSegments(targetSeats, layout.cols);
+
+    const shuffledIds = seated.map((s) => s.id);
+    for (let i = shuffledIds.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledIds[i], shuffledIds[j]] = [shuffledIds[j], shuffledIds[i]];
+    }
 
     const colorByStudentId = new Map<string, string>();
     const seatByStudentId = new Map<string, number>();
-    let seatCursor = 0;
-    groups.forEach((group, i) => {
-      const color = GROUP_COLOR_PALETTE[i % GROUP_COLOR_PALETTE.length];
-      for (const studentId of group) {
-        colorByStudentId.set(studentId, color);
-        seatByStudentId.set(studentId, seatOrder[seatCursor]);
-        seatCursor++;
+    let studentCursor = 0;
+    let colorIndex = 0;
+
+    for (const segment of segments) {
+      const segmentStudentIds = shuffledIds.slice(studentCursor, studentCursor + segment.length);
+      studentCursor += segment.length;
+
+      const segmentGroups = buildGroups(segmentStudentIds, groupSize);
+      let seatCursor = 0;
+      for (const group of segmentGroups) {
+        const color = GROUP_COLOR_PALETTE[colorIndex % GROUP_COLOR_PALETTE.length];
+        colorIndex++;
+        for (const studentId of group) {
+          colorByStudentId.set(studentId, color);
+          seatByStudentId.set(studentId, segment[seatCursor]);
+          seatCursor++;
+        }
       }
-    });
+    }
 
     const updated: Student[] = [];
     const updatedStudents = get().students.map((s) => {

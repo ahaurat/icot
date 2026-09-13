@@ -88,3 +88,32 @@ export function planReseat(
   const placement = placementForLayout(layout, seated.length);
   return seated.map((s, i) => ({ id: s.id, seatIndex: placement[i] }));
 }
+
+function isGridAdjacent(a: number, b: number, cols: number): boolean {
+  const rowA = Math.floor(a / cols);
+  const colA = a % cols;
+  const rowB = Math.floor(b / cols);
+  const colB = b % cols;
+  return (rowA === rowB && Math.abs(colA - colB) === 1) || (colA === colB && Math.abs(rowA - rowB) === 1);
+}
+
+/**
+ * Split an ordered list of desk indices into maximal runs where each desk is
+ * grid-adjacent to the one before it. Used so "sit together" placements never
+ * span a spatial discontinuity in the seat order (e.g. a jump from the top of
+ * one column to the bottom of the next).
+ */
+export function contiguousSegments(deskIndices: number[], cols: number): number[][] {
+  if (deskIndices.length === 0) return [];
+  const segments: number[][] = [[deskIndices[0]]];
+  for (let i = 1; i < deskIndices.length; i++) {
+    const prev = deskIndices[i - 1];
+    const curr = deskIndices[i];
+    if (isGridAdjacent(prev, curr, cols)) {
+      segments[segments.length - 1].push(curr);
+    } else {
+      segments.push([curr]);
+    }
+  }
+  return segments;
+}
