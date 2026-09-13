@@ -1,9 +1,11 @@
+import { useState } from "react";
 import type { CategoryConfig } from "../constants/categories";
 import { CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import { useAppStore } from "../state/useAppStore";
 import { usePeriodRangeLabel, useStudentTotals } from "../hooks/useAggregates";
 import { formatDuration } from "../utils/time";
 import EventHistory from "./EventHistory";
+import LogMinutesDialog from "./LogMinutesDialog";
 import Modal from "./Modal";
 import TotalsTable from "./TotalsTable";
 
@@ -17,9 +19,11 @@ export default function StudentModal({
   const student = useAppStore((s) => s.students.find((x) => x.id === studentId));
   const startTimer = useAppStore((s) => s.startTimer);
   const logCount = useAppStore((s) => s.logCount);
+  const logDuration = useAppStore((s) => s.logDuration);
   const totals = useStudentTotals(studentId);
   const periodLabel = usePeriodRangeLabel();
   const timedPeriod = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].period, 0);
+  const [loggingMinutesFor, setLoggingMinutesFor] = useState<CategoryConfig | null>(null);
 
   if (!student) {
     onClose();
@@ -27,7 +31,9 @@ export default function StudentModal({
   }
 
   function handleCategory(cat: CategoryConfig) {
-    if (cat.type === "timed") {
+    if (cat.manualDuration) {
+      setLoggingMinutesFor(cat);
+    } else if (cat.type === "timed") {
       startTimer(student!.id, cat.key);
       onClose(); // timer now ticks on the seat
     } else {
@@ -48,7 +54,13 @@ export default function StudentModal({
                 onClick={() => handleCategory(cat)}
                 className="rounded px-3 py-2 text-sm font-medium text-white"
                 style={{ backgroundColor: cat.color }}
-                title={cat.type === "timed" ? "Starts a timer" : "Adds one instance"}
+                title={
+                  cat.manualDuration
+                    ? "Log minutes"
+                    : cat.type === "timed"
+                    ? "Starts a timer"
+                    : "Adds one instance"
+                }
               >
                 {cat.label}
                 {cat.type === "count" ? " +1" : ""}
@@ -56,7 +68,8 @@ export default function StudentModal({
             ))}
           </div>
           <p className="mt-1 text-xs text-gray-400">
-            Bathroom/Nurse/Office/Sleeping/Other start a timer · Cell Phone/Headphones add a tally
+            Bathroom/Nurse/Office/Sleeping/Other start a timer · Tardy logs minutes late · Cell
+            Phone/Headphones add a tally
           </p>
         </div>
 
@@ -77,6 +90,14 @@ export default function StudentModal({
           <EventHistory studentId={student.id} />
         </div>
       </div>
+
+      {loggingMinutesFor && (
+        <LogMinutesDialog
+          title={loggingMinutesFor.label}
+          onLog={(minutes) => logDuration(student!.id, loggingMinutesFor.key, minutes)}
+          onClose={() => setLoggingMinutesFor(null)}
+        />
+      )}
     </Modal>
   );
 }
