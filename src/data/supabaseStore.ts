@@ -8,6 +8,7 @@ import type {
   SeatingSnapshot,
   Settings,
   Student,
+  ViewPeriod,
 } from "../types";
 import type { DataStore } from "./store";
 import { withSettingsDefaults } from "./store";
@@ -48,6 +49,7 @@ interface SettingsRow {
   random_picker: RandomPickerSettings | null;
   picker_progress: Record<string, ClassPickerProgress> | null;
   seating_snapshots: Record<string, SeatingSnapshot> | null;
+  view_period: ViewPeriod | null;
 }
 
 const classToRow = (c: ClassRoom): ClassRow => ({
@@ -159,6 +161,7 @@ export function createSupabaseStore(): DataStore {
                 randomPicker: (settings.data as SettingsRow).random_picker ?? undefined,
                 pickerProgress: (settings.data as SettingsRow).picker_progress ?? undefined,
                 seatingSnapshots: (settings.data as SettingsRow).seating_snapshots ?? undefined,
+                viewPeriod: (settings.data as SettingsRow).view_period ?? undefined,
               }
             : null
         ),
@@ -205,6 +208,7 @@ export function createSupabaseStore(): DataStore {
           random_picker: s.randomPicker,
           picker_progress: s.pickerProgress,
           seating_snapshots: s.seatingSnapshots,
+          view_period: s.viewPeriod,
         },
         { onConflict: "owner_id" }
       );

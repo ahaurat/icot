@@ -9,6 +9,7 @@ export type CategoryKey =
   | "office"
   | "sleeping"
   | "other"
+  | "tardy"
   | "cellphone"
   | "headphones"
   | "extracredit";
@@ -84,6 +85,14 @@ export interface SeatingSnapshot {
   seats: Record<string, number>;
 }
 
+export interface ViewPeriod {
+  mode: "year" | "custom";
+  /** YYYY-MM-DD; only meaningful when mode === "custom". */
+  customStart: string;
+  /** YYYY-MM-DD; only meaningful when mode === "custom". */
+  customEnd: string;
+}
+
 export interface Settings {
   /** ISO date (YYYY-MM-DD) marking the start of the tracked school year. */
   schoolYearStart: string;
@@ -95,6 +104,8 @@ export interface Settings {
   pickerProgress: Record<string, ClassPickerProgress>;
   /** Per-class "randomize seats -> today only" snapshot, keyed by classId. */
   seatingSnapshots: Record<string, SeatingSnapshot>;
+  /** Which date range the standing "Period" totals column reflects. */
+  viewPeriod: ViewPeriod;
 }
 
 export interface AppData {

@@ -18,6 +18,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const currentClassId = useAppStore((s) => s.currentClassId);
   const schoolYearStart = useAppStore((s) => s.settings.schoolYearStart);
   const setSchoolYearStart = useAppStore((s) => s.setSchoolYearStart);
+  const viewPeriod = useAppStore((s) => s.settings.viewPeriod);
+  const setViewPeriod = useAppStore((s) => s.setViewPeriod);
   const randomPicker = useAppStore((s) => s.settings.randomPicker);
   const setRandomPickerSettings = useAppStore((s) => s.setRandomPickerSettings);
   const exportData = useAppStore((s) => s.exportData);
@@ -91,6 +93,55 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             value={schoolYearStart}
             onChange={(e) => setSchoolYearStart(e.target.value)}
           />
+        </section>
+
+        {/* Totals timeframe */}
+        <section>
+          <h3 className="mb-1 text-sm font-semibold text-gray-700">Totals timeframe</h3>
+          <p className="mb-2 text-xs text-gray-500">
+            Controls the second Totals column shown for each student. Switch to a custom
+            range — e.g. the first day of semester 2 — to count only events from then on,
+            without losing earlier history.
+          </p>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                name="view-period-mode"
+                checked={viewPeriod.mode === "year"}
+                onChange={() => setViewPeriod({ mode: "year" })}
+              />
+              Whole year
+            </label>
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                name="view-period-mode"
+                checked={viewPeriod.mode === "custom"}
+                onChange={() => setViewPeriod({ mode: "custom" })}
+              />
+              Custom range
+            </label>
+          </div>
+          {viewPeriod.mode === "custom" && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+              <input
+                type="date"
+                className="rounded border p-1"
+                value={viewPeriod.customStart}
+                max={viewPeriod.customEnd || undefined}
+                onChange={(e) => setViewPeriod({ customStart: e.target.value })}
+              />
+              <span>to</span>
+              <input
+                type="date"
+                className="rounded border p-1"
+                value={viewPeriod.customEnd}
+                min={viewPeriod.customStart || undefined}
+                onChange={(e) => setViewPeriod({ customEnd: e.target.value })}
+              />
+            </div>
+          )}
         </section>
 
         {/* Random picker */}

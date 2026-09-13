@@ -2,7 +2,8 @@
 
 A classroom tool for tracking student distractions: per-student timers (bathroom,
 nurse, office, sleeping, other) and tallies (cell phone, headphones), with
-running totals for **today** and the **school year**.
+running totals for **today** and a configurable **period** (the whole school
+year, or a custom date range).
 
 Originally a single `index.html`; rewritten as a React + Vite + TypeScript app.
 The original file is preserved in the first git commit.
@@ -39,9 +40,10 @@ npm run typecheck  # tsc only
   period in plain sentences ("Ada Lovelace went to the bathroom for 8m (2 trips)"),
   defaulting to today with a date-range picker (Today / Yesterday / This week /
   This month / This school year / custom range).
-- **Totals**: each student modal shows a Today / Year total per category, a
+- **Totals**: each student modal shows a Today / Period total per category, a
   **Total off-task** row summing the timed categories, and a plain-English summary
-  ("… off-task for a total of 15m this year").
+  ("… off-task for a total of 15m during this school year"). What "Period" means
+  is controlled by **Totals timeframe** below.
 - **Edit entries**: in a student's History, click **Edit** to change an entry's
   category, time, or duration — or delete it. Handy when a timer ran too long. The
   History list has a multi-select **category filter**.
@@ -57,6 +59,14 @@ npm run typecheck  # tsc only
   hidden but kept, and restorable from Settings → Archived rosters.
 - **School-year boundary**: Settings → School year. Year totals count events on or
   after this date (default Aug 1, auto-rolls each year).
+- **Totals timeframe**: Settings → Totals timeframe switches the Period column
+  between "Whole year" and a custom start/end range (e.g. the first day of
+  semester 2), so counts can restart for a new term without losing earlier
+  history.
+- **Print reports**: from the Summary modal, pick a date range and "This class"
+  or "All classes", then **Print…** for one page per active student with their
+  totals and itemized activity log for that range — handy for end-of-term
+  handouts.
 - **Backup / restore**: Export/Import the full dataset as JSON.
 
 Stable student IDs back all of this: moving seats, renaming, and removing students
@@ -77,18 +87,21 @@ login**, so your students' data isn't exposed by the public key.
    the confirmation link before signing in. (Supabase's built-in email sender is
    rate-limited and meant for low volume — configure custom SMTP under
    **Authentication → Emails** if you expect many sign-ups.)
-4. **Get your keys** from **Settings → API Keys** (new projects) or
+4. To test the password-reset flow locally, add `http://localhost:5173` to
+   that project's **Authentication → URL Configuration → Redirect URLs** (the
+   Site URL alone doesn't cover a different origin like localhost).
+5. **Get your keys** from **Settings → API Keys** (new projects) or
    **Settings → API** (older projects):
    - **Project URL** — shown at the top of either page (e.g. `https://xxxx.supabase.co`)
    - **API key** — use the **Publishable key** (`sb_publishable_...`) on new projects,
      or the **anon public** key on older ones. Both work identically here.
-5. **Set the env vars** — locally, copy `.env.example` to `.env`:
+6. **Set the env vars** — locally, copy `.env.example` to `.env`:
    ```
    VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
    VITE_SUPABASE_ANON_KEY=YOUR-PUBLISHABLE-OR-ANON-KEY
    ```
    (In production, set these in your host's env — see below.)
-6. Restart `npm run dev`. You'll get a **sign-in / sign-up screen**; create an
+7. Restart `npm run dev`. You'll get a **sign-in / sign-up screen**; create an
    account (or sign in). The header badge switches from **💾 Local** to
    **☁ Cloud**, and on each teacher's first sign-in their own demo data is seeded.
    Sign out from **Settings → Account**.
@@ -118,6 +131,65 @@ The app is a static SPA — any static host works; these steps use **Vercel**.
 
 > Netlify and Cloudflare Pages work identically (same build/output, same env vars).
 
+## Deploying schema changes (Supabase migrations)
+
+Schema changes are managed as Supabase CLI migrations under `supabase/migrations/`,
+not by pasting SQL into the dashboard (that path is only for bootstrapping a
+brand-new project — see "Enabling Supabase" above).
+
+### First-time setup (once per project)
+
+`SUPABASE_ACCESS_TOKEN` should be a [scoped personal access token](https://supabase.com/docs/guides/platform/personal-access-tokens)
+(dashboard → Account → Access Tokens), limited to the production and dev
+projects, with these permissions — anything less and `link`/`db push` fail
+with an authorization error:
+
+- **Project Settings**: Read
+- **Migrations**: Read-write
+- **API Keys**: Read
+- **API Key Secrets**: Read
+
+Before the workflow can run against a project, link it locally and mark the
+schema that's already live as already applied — this is what stops `db push`
+from trying to `create table` against tables that already exist:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <project-ref>
+npx supabase migration repair 20260911000000 --status applied --linked
+npx supabase migration list --linked   # confirms nothing pending
+```
+
+Do this once for the production project ref and once for the dev project ref.
+Repeat it for any brand-new project stood up later via the "Enabling Supabase"
+bootstrap path above, too — it needs the same baselining before this workflow
+can manage its schema.
+
+### Going forward
+
+1. `npx supabase migration new <name>` — creates a new timestamped file under
+   `supabase/migrations/`.
+2. Hand-edit the generated SQL.
+3. Test it against the dev project: in GitHub, go to **Actions → Supabase
+   Migrate → Run workflow**, choose **dev**, and run it. Verify with
+   `npm run dev:cloud`.
+4. Open a PR and merge the migration file to `main` as normal — merging does
+   **not** touch either database by itself, it only ships the file.
+5. When ready, go to **Actions → Supabase Migrate → Run workflow**, choose
+   **production**, and run it.
+
+The workflow requires these repo secrets (**Settings → Secrets and variables
+→ Actions**), added once when this is first set up:
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROD_PROJECT_REF`, `SUPABASE_PROD_DB_PASSWORD`,
+`SUPABASE_PROD_DB_URL`, `SUPABASE_DEV_PROJECT_REF`, `SUPABASE_DEV_DB_PASSWORD`,
+`SUPABASE_DEV_DB_URL`.
+
+`*_DB_URL` must be each project's **Session pooler** connection string (dashboard
+→ **Connect** → **Session pooler** tab), not the direct connection — GitHub
+Actions runners are IPv4-only, and a project's direct connection
+(`db.<ref>.supabase.co`) only resolves over IPv6. `link` doesn't need the
+pooler (it only talks to the Management API), but `db push` does.
+
 ## Local development vs. production data
 
 Once the app is deployed, the production Supabase project holds **real student
@@ -141,11 +213,16 @@ synchronous while network writes race and can fail independently. Testing those
 needs a **second Supabase project** (the free tier allows two):
 
 1. Create a new project — name it something like `icot-dev`.
-2. Run `supabase/schema.sql` in its SQL editor, same as production.
+2. Run `supabase/schema.sql` in its SQL editor, same as production. (Once the
+   project is linked and baselined — see "Deploying schema changes" above —
+   you can instead run the **Supabase Migrate** workflow with `dev` selected.)
 3. Add a throwaway test user under **Authentication → Users**. Sign-ups can stay
    enabled here; there's no real data to protect.
-4. Put that project's URL and publishable key in `.env.cloud.local`.
-5. `npm run dev:cloud` — you'll get the login screen, backed by the dev project.
+4. To test the password-reset flow locally, add `http://localhost:5173` to
+   this project's **Authentication → URL Configuration → Redirect URLs** (the
+   Site URL alone doesn't cover a different origin like localhost).
+5. Put that project's URL and publishable key in `.env.cloud.local`.
+6. `npm run dev:cloud` — you'll get the login screen, backed by the dev project.
 
 Seed it with fake students via **Manage roster**, or import a backup exported
 from local mode. Never copy a production backup into the dev project.
@@ -177,7 +254,7 @@ src/
   constants/categories.ts   Category config (timed vs count, colors)
   data/                     Storage: DataStore interface, local + Supabase adapters, seed
   state/                    Zustand store (useAppStore) + live-timer ticker
-  hooks/useAggregates.ts    Today/Year totals per student × category
+  hooks/useAggregates.ts    Today/Period totals per student × category
   utils/                    time + id helpers
   components/               Header, SeatingChart, Seat, StudentModal, TotalsTable,
                             EventHistory, EditEventDialog, SettingsModal, RosterManager

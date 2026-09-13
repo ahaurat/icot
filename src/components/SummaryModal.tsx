@@ -6,6 +6,7 @@ import { elapsedSeconds, formatDurationCompact, isInRange, presetRange } from ".
 import type { DateRange } from "../utils/time";
 import DateRangePicker from "./DateRangePicker";
 import Modal from "./Modal";
+import type { PrintRequest } from "../utils/printReport";
 
 interface SummaryLine {
   studentName: string;
@@ -13,7 +14,13 @@ interface SummaryLine {
   text: string;
 }
 
-export default function SummaryModal({ onClose }: { onClose: () => void }) {
+export default function SummaryModal({
+  onClose,
+  onPrint,
+}: {
+  onClose: () => void;
+  onPrint: (request: PrintRequest) => void;
+}) {
   const currentClass = useCurrentClass();
   const currentClassId = useAppStore((s) => s.currentClassId);
   const students = useAppStore((s) => s.students);
@@ -21,6 +28,7 @@ export default function SummaryModal({ onClose }: { onClose: () => void }) {
   const schoolYearStart = useAppStore((s) => s.settings.schoolYearStart);
 
   const [range, setRange] = useState<DateRange>(() => presetRange("today", schoolYearStart));
+  const [printScope, setPrintScope] = useState<"class" | "all">("class");
 
   const lines = useMemo<SummaryLine[]>(() => {
     const nameById = new Map(students.map((s) => [s.id, s.name]));
@@ -63,6 +71,11 @@ export default function SummaryModal({ onClose }: { onClose: () => void }) {
     );
   }, [events, students, currentClassId, range]);
 
+  function handlePrint() {
+    onPrint({ scope: printScope, classId: currentClassId, range });
+    onClose();
+  }
+
   return (
     <Modal
       title={`Summary — ${currentClass?.name ?? ""}`}
@@ -71,6 +84,26 @@ export default function SummaryModal({ onClose }: { onClose: () => void }) {
     >
       <div className="space-y-4">
         <DateRangePicker value={range} onChange={setRange} />
+
+        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+          <span>Print:</span>
+          <select
+            className="rounded border p-1"
+            value={printScope}
+            onChange={(e) => setPrintScope(e.target.value as "class" | "all")}
+          >
+            <option value="class">This class</option>
+            <option value="all">All classes</option>
+          </select>
+          <button
+            type="button"
+            onClick={handlePrint}
+            disabled={printScope === "class" && !currentClassId}
+            className="rounded bg-gray-700 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Print…
+          </button>
+        </div>
 
         <p className="text-xs text-gray-500">
           {range.label} · {lines.length} {lines.length === 1 ? "activity" : "activities"}

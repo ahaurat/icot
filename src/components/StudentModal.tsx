@@ -3,9 +3,10 @@ import type { CategoryConfig } from "../constants/categories";
 import { CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import type { CategoryKey } from "../types";
 import { useAppStore } from "../state/useAppStore";
-import { useStudentTotals } from "../hooks/useAggregates";
+import { usePeriodRangeLabel, useStudentTotals } from "../hooks/useAggregates";
 import { formatDuration } from "../utils/time";
 import EventHistory from "./EventHistory";
+import LogMinutesDialog from "./LogMinutesDialog";
 import Modal from "./Modal";
 import TotalsTable from "./TotalsTable";
 
@@ -19,8 +20,11 @@ export default function StudentModal({
   const student = useAppStore((s) => s.students.find((x) => x.id === studentId));
   const startTimer = useAppStore((s) => s.startTimer);
   const logCount = useAppStore((s) => s.logCount);
+  const logDuration = useAppStore((s) => s.logDuration);
   const totals = useStudentTotals(studentId);
-  const timedYear = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].year, 0);
+  const periodLabel = usePeriodRangeLabel();
+  const timedPeriod = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].period, 0);
+  const [loggingMinutesFor, setLoggingMinutesFor] = useState<CategoryConfig | null>(null);
 
   const [flashKey, setFlashKey] = useState<CategoryKey | null>(null);
   const [flashNonce, setFlashNonce] = useState(0);
@@ -38,7 +42,9 @@ export default function StudentModal({
   }
 
   function handleCategory(cat: CategoryConfig) {
-    if (cat.type === "timed") {
+    if (cat.manualDuration) {
+      setLoggingMinutesFor(cat);
+    } else if (cat.type === "timed") {
       startTimer(student!.id, cat.key);
       onClose(); // timer now ticks on the seat
     } else {
@@ -63,7 +69,13 @@ export default function StudentModal({
                 onClick={() => handleCategory(cat)}
                 className="relative overflow-hidden rounded px-3 py-2 text-sm font-medium text-white"
                 style={{ backgroundColor: cat.color }}
-                title={cat.type === "timed" ? "Starts a timer" : "Adds one instance"}
+                title={
+                  cat.manualDuration
+                    ? "Log minutes"
+                    : cat.type === "timed"
+                    ? "Starts a timer"
+                    : "Adds one instance"
+                }
               >
                 {cat.label}
                 {cat.type === "count" ? " +1" : ""}
@@ -78,17 +90,19 @@ export default function StudentModal({
             ))}
           </div>
           <p className="mt-1 text-xs text-gray-400">
-            Bathroom/Nurse/Office/Sleeping/Other start a timer · Cell Phone/Headphones add a tally
+            Bathroom/Nurse/Office/Sleeping/Other start a timer · Tardy logs minutes late · Cell
+            Phone/Headphones add a tally
           </p>
         </div>
 
         <div>
           <p className="mb-2 text-sm font-medium text-gray-600">Totals</p>
           <TotalsTable studentId={student.id} />
-          {timedYear > 0 && (
+          {timedPeriod > 0 && (
             <p className="mt-2 text-sm text-gray-600">
               {student.name.split(" ")[0]} has been off-task for a total of{" "}
-              <strong>{formatDuration(timedYear)}</strong> this year.
+              <strong>{formatDuration(timedPeriod)}</strong> during{" "}
+              {periodLabel.charAt(0).toLowerCase() + periodLabel.slice(1)}.
             </p>
           )}
         </div>
@@ -98,6 +112,14 @@ export default function StudentModal({
           <EventHistory studentId={student.id} />
         </div>
       </div>
+
+      {loggingMinutesFor && (
+        <LogMinutesDialog
+          title={loggingMinutesFor.label}
+          onLog={(minutes) => logDuration(student!.id, loggingMinutesFor.key, minutes)}
+          onClose={() => setLoggingMinutesFor(null)}
+        />
+      )}
     </Modal>
   );
 }

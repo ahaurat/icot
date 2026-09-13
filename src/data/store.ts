@@ -14,6 +14,7 @@ export function withSettingsDefaults(s: Partial<Settings> | null | undefined): S
     randomPicker: s?.randomPicker ?? { mode: "random", resetDaily: true },
     pickerProgress: s?.pickerProgress ?? {},
     seatingSnapshots: s?.seatingSnapshots ?? {},
+    viewPeriod: s?.viewPeriod ?? { mode: "year", customStart: "", customEnd: "" },
   };
 }
 

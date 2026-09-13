@@ -7,6 +7,7 @@ import type {
   RandomPickerSettings,
   SeatLayout,
   Student,
+  ViewPeriod,
 } from "../types";
 import { CATEGORY_BY_KEY } from "../constants/categories";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
@@ -52,6 +53,7 @@ interface AppState extends AppData {
   startTimer: (studentId: string, categoryKey: CategoryKey) => void;
   stopTimer: (eventId: string) => void;
   logCount: (studentId: string, categoryKey: CategoryKey) => void;
+  logDuration: (studentId: string, categoryKey: CategoryKey, minutes: number) => void;
   updateEvent: (id: string, patch: Partial<AppEvent>) => void;
   deleteEvent: (id: string) => void;
 
@@ -75,6 +77,7 @@ interface AppState extends AppData {
 
   // Settings + data
   setSchoolYearStart: (date: string) => void;
+  setViewPeriod: (patch: Partial<ViewPeriod>) => void;
   importData: (data: AppData) => void;
   exportData: () => AppData;
 
@@ -137,6 +140,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     randomPicker: { mode: "random", resetDaily: true },
     pickerProgress: {},
     seatingSnapshots: {},
+    viewPeriod: { mode: "year", customStart: "", customEnd: "" },
   },
   loaded: false,
   error: null,
@@ -211,6 +215,31 @@ export const useAppStore = create<AppState>((set, get) => ({
       startedAt: ts,
       endedAt: null,
       durationSeconds: null,
+      open: false,
+      createdAt: ts,
+      updatedAt: ts,
+    };
+    set((s) => ({ events: [...s.events, event] }));
+    persist(store.upsertEvent(event));
+  },
+
+  logDuration(studentId, categoryKey, minutes) {
+    const cat = CATEGORY_BY_KEY[categoryKey];
+    if (cat.type !== "timed") return;
+    const student = get().students.find((s) => s.id === studentId);
+    if (!student) return;
+
+    const duration = Math.max(0, Math.round(minutes * 60));
+    const ts = nowIso();
+    const event: AppEvent = {
+      id: newId(),
+      studentId,
+      classId: student.classId,
+      categoryKey,
+      type: "timed",
+      startedAt: ts,
+      endedAt: new Date(new Date(ts).getTime() + duration * 1000).toISOString(),
+      durationSeconds: duration,
       open: false,
       createdAt: ts,
       updatedAt: ts,
@@ -426,6 +455,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setSchoolYearStart(date) {
     const settings = { ...get().settings, schoolYearStart: date };
+    set({ settings });
+    persist(store.saveSettings(settings));
+  },
+
+  setViewPeriod(patch) {
+    const settings = {
+      ...get().settings,
+      viewPeriod: { ...get().settings.viewPeriod, ...patch },
+    };
     set({ settings });
     persist(store.saveSettings(settings));
   },

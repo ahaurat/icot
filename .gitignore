@@ -26,3 +26,9 @@ yarn-error.log*
 # Local roster files (student PII) — never commit
 sample-rosters/
 public/testrosters/
+
+# Scratch agent task reports (subagent-driven-development workflow)
+/sdd/
+
+# Superpowers plans/specs — working docs for AI-assisted sessions, not repo docs
+docs/superpowers/

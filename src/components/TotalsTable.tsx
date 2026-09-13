@@ -1,6 +1,6 @@
 import { COUNT_CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import type { CategoryConfig } from "../constants/categories";
-import { useStudentTotals } from "../hooks/useAggregates";
+import { usePeriodColumnLabel, useStudentTotals } from "../hooks/useAggregates";
 import { formatDuration } from "../utils/time";
 
 /** Format a total: duration for timed categories, count for count categories. */
@@ -11,9 +11,10 @@ function formatTotal(value: number, type: "timed" | "count"): string {
 
 export default function TotalsTable({ studentId }: { studentId: string }) {
   const totals = useStudentTotals(studentId);
+  const periodLabel = usePeriodColumnLabel();
 
   const timedToday = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].today, 0);
-  const timedYear = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].year, 0);
+  const timedPeriod = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].period, 0);
 
   const renderRow = (cat: CategoryConfig) => {
     const t = totals[cat.key];
@@ -30,7 +31,7 @@ export default function TotalsTable({ studentId }: { studentId: string }) {
           </span>
         </td>
         <td className="px-3 py-1.5 text-right tabular-nums">{formatTotal(t.today, cat.type)}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{formatTotal(t.year, cat.type)}</td>
+        <td className="px-3 py-1.5 text-right tabular-nums">{formatTotal(t.period, cat.type)}</td>
       </tr>
     );
   };
@@ -42,7 +43,7 @@ export default function TotalsTable({ studentId }: { studentId: string }) {
           <tr className="bg-gray-100 text-left">
             <th className="px-3 py-2 font-semibold">Category</th>
             <th className="px-3 py-2 text-right font-semibold">Today</th>
-            <th className="px-3 py-2 text-right font-semibold">Year</th>
+            <th className="px-3 py-2 text-right font-semibold">{periodLabel}</th>
           </tr>
         </thead>
         <tbody>
@@ -55,7 +56,7 @@ export default function TotalsTable({ studentId }: { studentId: string }) {
               {timedToday === 0 ? "—" : formatDuration(timedToday)}
             </td>
             <td className="px-3 py-1.5 text-right tabular-nums">
-              {timedYear === 0 ? "—" : formatDuration(timedYear)}
+              {timedPeriod === 0 ? "—" : formatDuration(timedPeriod)}
             </td>
           </tr>
 
