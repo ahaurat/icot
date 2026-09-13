@@ -8,7 +8,16 @@ interface HeaderProps {
   onOpenSummary: () => void;
   onOpenSettings: () => void;
   onPickedStudent: (studentId: string) => void;
+  hasPickedStudent: boolean;
+  onClearPickedStudent: () => void;
+  onOpenRandomizeSeats: () => void;
+  onOpenCreateGroups: () => void;
 }
+
+// Every select/button in this row shares a fixed height so a browser's native
+// <select> chrome (which can render taller than a same-padding <button>)
+// doesn't throw off vertical alignment.
+const controlClass = "flex h-9 items-center justify-center rounded px-4 text-sm font-medium";
 
 export default function Header({
   editSeating,
@@ -16,6 +25,10 @@ export default function Header({
   onOpenSummary,
   onOpenSettings,
   onPickedStudent,
+  hasPickedStudent,
+  onClearPickedStudent,
+  onOpenRandomizeSeats,
+  onOpenCreateGroups,
 }: HeaderProps) {
   const allClasses = useAppStore((s) => s.classes);
   const classes = sortByPeriod(allClasses.filter((c) => !c.archivedAt));
@@ -39,7 +52,7 @@ export default function Header({
       <h1 className="text-3xl font-bold">ICOT</h1>
 
       <select
-        className="rounded border p-2"
+        className="flex h-9 items-center rounded border px-2 text-sm"
         value={currentClassId ?? ""}
         onChange={(e) => setCurrentClass(e.target.value)}
       >
@@ -50,36 +63,66 @@ export default function Header({
         ))}
       </select>
 
-      <button
-        type="button"
-        onClick={handlePick}
-        disabled={!hasActiveStudents}
-        className="rounded bg-purple-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Choose random student
-      </button>
+      {editSeating ? (
+        <>
+          <button
+            type="button"
+            onClick={onOpenRandomizeSeats}
+            className={`${controlClass} bg-purple-600 text-white`}
+          >
+            Randomize seats…
+          </button>
+          <button
+            type="button"
+            onClick={onOpenCreateGroups}
+            className={`${controlClass} bg-purple-600 text-white`}
+          >
+            Create groups…
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={handlePick}
+            disabled={!hasActiveStudents}
+            className={`${controlClass} bg-purple-600 text-white disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            Choose random student
+          </button>
+          {hasPickedStudent && (
+            <button
+              type="button"
+              onClick={onClearPickedStudent}
+              className="flex h-9 items-center text-sm text-gray-500 underline hover:text-gray-700"
+            >
+              Clear
+            </button>
+          )}
+        </>
+      )}
 
       <div className="ml-auto flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onOpenSummary}
-          className="rounded bg-indigo-500 px-4 py-2 text-white"
-        >
-          Summary
-        </button>
+        {!editSeating && (
+          <button
+            type="button"
+            onClick={onOpenSummary}
+            className={`${controlClass} bg-indigo-500 text-white`}
+          >
+            Summary
+          </button>
+        )}
         <button
           type="button"
           onClick={onToggleEditSeating}
-          className={`rounded px-4 py-2 text-white ${
-            editSeating ? "bg-green-600" : "bg-gray-600"
-          }`}
+          className={`${controlClass} text-white ${editSeating ? "bg-green-600" : "bg-gray-600"}`}
         >
           {editSeating ? "Done moving seats" : "Edit seating"}
         </button>
         <button
           type="button"
           onClick={onOpenSettings}
-          className="rounded bg-blue-500 px-4 py-2 text-white"
+          className={`${controlClass} bg-blue-500 text-white`}
         >
           Settings
         </button>

@@ -6,6 +6,8 @@ import SeatingChart from "./components/SeatingChart";
 import StudentModal from "./components/StudentModal";
 import SettingsModal from "./components/SettingsModal";
 import SummaryModal from "./components/SummaryModal";
+import RandomizeSeatsModal from "./components/RandomizeSeatsModal";
+import CreateGroupsModal from "./components/CreateGroupsModal";
 import LoginScreen from "./components/LoginScreen";
 
 function Centered({ children }: { children: ReactNode }) {
@@ -30,6 +32,8 @@ function MainApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [editSeating, setEditSeating] = useState(false);
+  const [randomizeOpen, setRandomizeOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
   const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
   const [pickNonce, setPickNonce] = useState(0);
 
@@ -78,6 +82,10 @@ function MainApp() {
         onOpenSummary={() => setSummaryOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onPickedStudent={handlePickedStudent}
+        hasPickedStudent={pickedStudentId !== null}
+        onClearPickedStudent={() => setPickedStudentId(null)}
+        onOpenRandomizeSeats={() => setRandomizeOpen(true)}
+        onOpenCreateGroups={() => setGroupsOpen(true)}
       />
 
       {error && (
@@ -109,6 +117,14 @@ function MainApp() {
       {summaryOpen && <SummaryModal onClose={() => setSummaryOpen(false)} />}
 
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+
+      {randomizeOpen && currentClassId && (
+        <RandomizeSeatsModal classId={currentClassId} onClose={() => setRandomizeOpen(false)} />
+      )}
+
+      {groupsOpen && currentClassId && (
+        <CreateGroupsModal classId={currentClassId} onClose={() => setGroupsOpen(false)} />
+      )}
     </div>
   );
 }
