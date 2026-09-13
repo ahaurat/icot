@@ -91,7 +91,7 @@ export default function RosterManager({ classId }: { classId: string }) {
           {active.map((s) => (
             <div key={s.id} className="flex items-center gap-2 px-3 py-1.5">
               <input
-                className="flex-1 rounded border px-2 py-1 text-sm"
+                className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
                 defaultValue={s.firstName}
                 placeholder="First name"
                 onBlur={(e) => {
@@ -100,7 +100,7 @@ export default function RosterManager({ classId }: { classId: string }) {
                 }}
               />
               <input
-                className="flex-1 rounded border px-2 py-1 text-sm"
+                className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
                 defaultValue={s.lastName}
                 placeholder="Last name"
                 onBlur={(e) => {
