@@ -19,12 +19,13 @@ const archivedClass: ClassRoom = {
   archivedAt: "2025-06-01T00:00:00.000Z",
 };
 
-const alice: Student = { id: "s1", classId: "c1", name: "Alice", seatIndex: 1, active: true };
-const bob: Student = { id: "s2", classId: "c1", name: "Bob", seatIndex: 0, active: true };
-const inactive: Student = { id: "s3", classId: "c1", name: "Zoe", seatIndex: 2, active: false };
-const charlie: Student = { id: "s4", classId: "c1", name: "Charlie", seatIndex: 5, active: true };
-const zach: Student = { id: "s5", classId: "c1", name: "Zach", seatIndex: null, active: true };
-const amy: Student = { id: "s6", classId: "c1", name: "Amy", seatIndex: null, active: true };
+const alice: Student = { id: "s1", classId: "c1", firstName: "Alice", lastName: "Anderson", seatIndex: 1, active: true };
+const bob: Student = { id: "s2", classId: "c1", firstName: "Bob", lastName: "Baker", seatIndex: 0, active: true };
+const inactive: Student = { id: "s3", classId: "c1", firstName: "Zoe", lastName: "Zephyr", seatIndex: 2, active: false };
+const charlie: Student = { id: "s4", classId: "c1", firstName: "Charlie", lastName: "Chen", seatIndex: 5, active: true };
+const zach: Student = { id: "s5", classId: "c1", firstName: "Zach", lastName: "Zimmer", seatIndex: null, active: true };
+const amy: Student = { id: "s6", classId: "c1", firstName: "Amy", lastName: "Adams", seatIndex: null, active: true };
+const annBaker: Student = { id: "s7", classId: "c1", firstName: "Ann", lastName: "Baker", seatIndex: null, active: true };
 
 function makeEvent(patch: Partial<AppEvent>): AppEvent {
   return {
@@ -44,9 +45,10 @@ function makeEvent(patch: Partial<AppEvent>): AppEvent {
 }
 
 describe("buildPrintReports", () => {
-  it("includes only active students, ordered by seat index", () => {
+  it("includes only active students, ordered alphabetically by last name", () => {
     const reports = buildPrintReports([classA], [alice, bob, inactive], [], range);
-    expect(reports.map((r) => r.student.id)).toEqual(["s2", "s1"]);
+    // Alice Anderson before Bob Baker, regardless of seat index; Zoe (inactive) excluded.
+    expect(reports.map((r) => r.student.id)).toEqual(["s1", "s2"]);
   });
 
   it("gives a student with no events in range a zeroed report", () => {
@@ -71,16 +73,21 @@ describe("buildPrintReports", () => {
 
   it("excludes archived classes and orders active classes by period", () => {
     const period3: ClassRoom = { id: "c3", name: "Period 3", seatRows: 6, seatCols: 6, archivedAt: null };
-    const carl: Student = { id: "s4", classId: "c3", name: "Carl", seatIndex: 0, active: true };
+    const carl: Student = { id: "s8", classId: "c3", firstName: "Carl", lastName: "Carter", seatIndex: 0, active: true };
     const reports = buildPrintReports([period3, classA, archivedClass], [alice, bob, carl], [], range);
     expect(reports.map((r) => r.classRoom.id)).toEqual(["c1", "c1", "c3"]);
   });
 
-  it("orders unseated students alphabetically, after seated students by seat index", () => {
-    // Test branches: both unseated → alphabetical (Amy/Zach); mixed unseated → unseated last; both seated → by index
+  it("orders active students alphabetically by last name, ignoring seat position", () => {
     const reports = buildPrintReports([classA], [charlie, zach, bob, amy], [], range);
-    // Expected: bob (seat 0), charlie (seat 5), amy (unseated, alpha), zach (unseated, alpha)
-    expect(reports.map((r) => r.student.name)).toEqual(["Bob", "Charlie", "Amy", "Zach"]);
+    // Adams (amy), Baker (bob), Chen (charlie), Zimmer (zach) — not seat order.
+    expect(reports.map((r) => r.student.id)).toEqual(["s6", "s2", "s4", "s5"]);
+  });
+
+  it("breaks a matching-last-name tie by first name", () => {
+    const reports = buildPrintReports([classA], [bob, annBaker], [], range);
+    // Ann Baker before Bob Baker.
+    expect(reports.map((r) => r.student.id)).toEqual(["s7", "s2"]);
   });
 });
 
