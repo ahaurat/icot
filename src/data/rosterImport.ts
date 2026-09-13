@@ -1,22 +1,28 @@
 import { strFromU8, unzipSync } from "fflate";
+import { splitLegacyName } from "../utils/studentName";
+import type { NamedStudent } from "../utils/studentName";
 
 export interface ParsedRoster {
   /** Class/period name inferred from the file name, e.g. "Period 1". */
   period: string;
-  /** Student display names, in the file's row order (= seating order). */
-  names: string[];
+  /** Students in the file's row order (= seating order). */
+  students: NamedStudent[];
   /** Original file name, for display. */
   fileName: string;
 }
 
-/** "Last, First" -> "First Last"; leaves already-normal names untouched. */
-export function normalizeName(raw: string): string {
+/**
+ * Splits a roster name cell into first/last. The column is normally
+ * "Last, First" (comma-delimited, unambiguous); a cell with no comma falls
+ * back to the same first-space rule used to migrate pre-split records.
+ */
+export function splitRosterName(raw: string): NamedStudent {
   const s = raw.trim().replace(/\s+/g, " ");
   const comma = s.indexOf(",");
-  if (comma === -1) return s;
-  const last = s.slice(0, comma).trim();
-  const first = s.slice(comma + 1).trim();
-  return first ? `${first} ${last}` : last;
+  if (comma === -1) return splitLegacyName(s);
+  const lastName = s.slice(0, comma).trim();
+  const firstName = s.slice(comma + 1).trim();
+  return { firstName, lastName };
 }
 
 /** Infer a period name from a file name like "01 Names.xlsx" -> "Period 1". */
@@ -63,11 +69,11 @@ function firstSheetPath(files: Record<string, Uint8Array>): string {
 }
 
 /**
- * Parse an xlsx roster file into an ordered list of student names.
+ * Parse an xlsx roster file into an ordered list of students.
  *
  * Format handled: a single sheet with a header row; the column whose header
- * contains "name" holds the students (falls back to column A). Names may be
- * "Last, First" and are normalized to "First Last".
+ * contains "name" holds the students (falls back to column A). Names are
+ * normally "Last, First" and are split into first/last on the comma.
  */
 export async function parseRosterFile(file: File): Promise<ParsedRoster> {
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -80,7 +86,9 @@ export async function parseRosterFile(file: File): Promise<ParsedRoster> {
   const sheetXml = strFromU8(files[firstSheetPath(files)]);
   const doc = new DOMParser().parseFromString(sheetXml, "application/xml");
   const rows = Array.from(doc.getElementsByTagName("row"));
-  if (rows.length === 0) return { period: periodFromFileName(file.name), names: [], fileName: file.name };
+  if (rows.length === 0) {
+    return { period: periodFromFileName(file.name), students: [], fileName: file.name };
+  }
 
   // Locate the name column from the header row (else default to column A).
   let nameCol = "A";
@@ -92,16 +100,16 @@ export async function parseRosterFile(file: File): Promise<ParsedRoster> {
     }
   }
 
-  const names: string[] = [];
+  const students: NamedStudent[] = [];
   for (let i = 1; i < rows.length; i++) {
     const cell = Array.from(rows[i].getElementsByTagName("c")).find(
       (c) => colLetters(c.getAttribute("r") ?? "") === nameCol
     );
-    const value = cell ? normalizeName(cellText(cell, shared)) : "";
-    if (value) names.push(value);
+    const raw = cell ? cellText(cell, shared).trim() : "";
+    if (raw) students.push(splitRosterName(raw));
   }
 
-  return { period: periodFromFileName(file.name), names, fileName: file.name };
+  return { period: periodFromFileName(file.name), students, fileName: file.name };
 }
 
 /** Parse several roster files, sorted by period name for a stable order. */

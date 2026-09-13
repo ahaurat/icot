@@ -4,7 +4,9 @@ import { useAppStore } from "./useAppStore";
 function seedOneStudent() {
   useAppStore.setState({
     classes: [{ id: "c1", name: "Period 1", seatRows: 5, seatCols: 6, archivedAt: null }],
-    students: [{ id: "s1", classId: "c1", name: "Alex", seatIndex: 0, active: true }],
+    students: [
+      { id: "s1", classId: "c1", firstName: "Alex", lastName: "Rivera", seatIndex: 0, active: true },
+    ],
     events: [],
   });
 }
@@ -39,5 +41,36 @@ describe("logDuration", () => {
   it("does nothing for an unknown student", () => {
     useAppStore.getState().logDuration("does-not-exist", "tardy", 5);
     expect(useAppStore.getState().events).toHaveLength(0);
+  });
+});
+
+describe("addStudent", () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      classes: [{ id: "c1", name: "Period 1", seatRows: 5, seatCols: 6, archivedAt: null }],
+      students: [],
+      events: [],
+    });
+  });
+
+  it("stores first and last name separately", () => {
+    useAppStore.getState().addStudent("c1", "Ada", "Lovelace", 0);
+    const [student] = useAppStore.getState().students;
+    expect(student.firstName).toBe("Ada");
+    expect(student.lastName).toBe("Lovelace");
+    expect(student.seatIndex).toBe(0);
+  });
+});
+
+describe("renameStudent", () => {
+  beforeEach(() => {
+    seedOneStudent();
+  });
+
+  it("updates first and last name independently", () => {
+    useAppStore.getState().renameStudent("s1", "Alexis", "Rivera");
+    const student = useAppStore.getState().students.find((s) => s.id === "s1")!;
+    expect(student.firstName).toBe("Alexis");
+    expect(student.lastName).toBe("Rivera");
   });
 });

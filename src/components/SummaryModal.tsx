@@ -7,6 +7,7 @@ import type { DateRange } from "../utils/time";
 import DateRangePicker from "./DateRangePicker";
 import Modal from "./Modal";
 import type { PrintRequest } from "../utils/printReport";
+import { studentFullName } from "../utils/studentName";
 
 interface SummaryLine {
   studentName: string;
@@ -31,7 +32,7 @@ export default function SummaryModal({
   const [printScope, setPrintScope] = useState<"class" | "all">("class");
 
   const lines = useMemo<SummaryLine[]>(() => {
-    const nameById = new Map(students.map((s) => [s.id, s.name]));
+    const nameById = new Map(students.map((s) => [s.id, studentFullName(s)]));
     const catOrder = new Map(CATEGORIES.map((c, i) => [c.key, i]));
 
     // Aggregate per student × category within the range.

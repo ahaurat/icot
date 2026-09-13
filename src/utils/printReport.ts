@@ -1,6 +1,7 @@
 import type { AppEvent, CategoryKey, ClassRoom, Student } from "../types";
 import { computeCategoryTotalsInRange } from "./categoryTotals";
 import { sortByPeriod } from "./classSort";
+import { studentSortKey } from "./studentName";
 import { describeEventDuration, isInRange } from "./time";
 import type { DateRange } from "./time";
 
@@ -24,16 +25,11 @@ export interface PrintRequest {
   range: DateRange;
 }
 
-/** Active students in a class, seated first (by seat index), then unseated, alphabetically. */
+/** Active students in a class, alphabetical by last name (then first name), regardless of seat. */
 function orderedActiveStudents(students: Student[], classId: string): Student[] {
   return students
     .filter((s) => s.classId === classId && s.active)
-    .sort((a, b) => {
-      if (a.seatIndex == null && b.seatIndex == null) return a.name.localeCompare(b.name);
-      if (a.seatIndex == null) return 1;
-      if (b.seatIndex == null) return -1;
-      return a.seatIndex - b.seatIndex;
-    });
+    .sort((a, b) => studentSortKey(a).localeCompare(studentSortKey(b)));
 }
 
 function formatLongDate(d: Date): string {
@@ -79,7 +75,7 @@ export function buildPrintDocumentTitle(request: PrintRequest, scopedClasses: Cl
 /**
  * Builds one printable report per active student across the given classes,
  * for the given range. Archived classes are always excluded; classes are
- * ordered by period, students within a class by seat order.
+ * ordered by period, students within a class alphabetically by last name.
  */
 export function buildPrintReports(
   classes: ClassRoom[],

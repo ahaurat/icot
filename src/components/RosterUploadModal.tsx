@@ -3,6 +3,7 @@ import { useAppStore } from "../state/useAppStore";
 import { parseRosterFiles, type ParsedRoster } from "../data/rosterImport";
 import { sortByPeriod } from "../utils/classSort";
 import Modal from "./Modal";
+import { studentFullName } from "../utils/studentName";
 
 export default function RosterUploadModal({ onClose }: { onClose: () => void }) {
   const classes = useAppStore((s) => s.classes);
@@ -22,7 +23,7 @@ export default function RosterUploadModal({ onClose }: { onClose: () => void }) 
     setError(null);
     try {
       const parsed = await parseRosterFiles(Array.from(fileList));
-      const nonEmpty = parsed.filter((r) => r.names.length > 0);
+      const nonEmpty = parsed.filter((r) => r.students.length > 0);
       if (nonEmpty.length === 0) {
         setError("No student names found in those files. Expected a column headed “Student Name”.");
         setRosters(null);
@@ -45,7 +46,7 @@ export default function RosterUploadModal({ onClose }: { onClose: () => void }) 
     onClose();
   }
 
-  const totalStudents = rosters?.reduce((n, r) => n + r.names.length, 0) ?? 0;
+  const totalStudents = rosters?.reduce((n, r) => n + r.students.length, 0) ?? 0;
 
   return (
     <Modal title="Upload rosters" onClose={onClose} maxWidthClass="max-w-xl">
@@ -97,15 +98,16 @@ export default function RosterUploadModal({ onClose }: { onClose: () => void }) 
                     <tr key={r.fileName} className="border-t align-top">
                       <td className="px-3 py-1.5 font-medium">{r.period}</td>
                       <td className="px-3 py-1.5 tabular-nums">
-                        {r.names.length}
-                        {r.names.length > deskTotal && (
+                        {r.students.length}
+                        {r.students.length > deskTotal && (
                           <span className="ml-1 text-xs text-amber-600">
                             (&gt;{deskTotal}, grid grows)
                           </span>
                         )}
                       </td>
                       <td className="px-3 py-1.5 text-xs text-gray-500">
-                        {r.names[0]} … {r.names[r.names.length - 1]}
+                        {studentFullName(r.students[0])} …{" "}
+                        {studentFullName(r.students[r.students.length - 1])}
                       </td>
                     </tr>
                   ))}

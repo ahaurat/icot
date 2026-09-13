@@ -24,7 +24,8 @@ interface ClassRow {
 interface StudentRow {
   id: string;
   class_id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   seat_index: number | null;
   active: boolean;
 }
@@ -67,14 +68,16 @@ const rowToClass = (r: ClassRow): ClassRoom => ({
 const studentToRow = (s: Student): StudentRow => ({
   id: s.id,
   class_id: s.classId,
-  name: s.name,
+  first_name: s.firstName,
+  last_name: s.lastName,
   seat_index: s.seatIndex,
   active: s.active,
 });
 const rowToStudent = (r: StudentRow): Student => ({
   id: r.id,
   classId: r.class_id,
-  name: r.name,
+  firstName: r.first_name,
+  lastName: r.last_name,
   seatIndex: r.seat_index,
   active: r.active,
 });

@@ -1,8 +1,18 @@
 import type { AppData, AppEvent, ClassRoom, Settings, Student } from "../types";
 import type { DataStore } from "./store";
 import { emptyData, withSettingsDefaults } from "./store";
+import { splitLegacyName } from "../utils/studentName";
 
 const STORAGE_KEY = "icot:data:v1";
+
+export type LegacyStudent = Student & { name?: string };
+
+/** Upgrades a student record written before first/last names were tracked separately. */
+export function migrateStudent(s: LegacyStudent): Student {
+  const { name, firstName, lastName, ...rest } = s;
+  if (firstName != null && lastName != null) return { ...rest, firstName, lastName };
+  return { ...rest, ...splitLegacyName(name ?? "") };
+}
 
 function read(): AppData {
   try {
@@ -12,7 +22,7 @@ function read(): AppData {
     return {
       // Coerce archivedAt for data written before the archive feature existed.
       classes: (parsed.classes ?? []).map((c) => ({ ...c, archivedAt: c.archivedAt ?? null })),
-      students: parsed.students ?? [],
+      students: ((parsed.students as LegacyStudent[] | undefined) ?? []).map(migrateStudent),
       events: parsed.events ?? [],
       settings: withSettingsDefaults(parsed.settings),
     };
