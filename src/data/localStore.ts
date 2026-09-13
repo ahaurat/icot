@@ -5,7 +5,7 @@ import { splitLegacyName } from "../utils/studentName";
 
 const STORAGE_KEY = "icot:data:v1";
 
-type LegacyStudent = Student & { name?: string };
+export type LegacyStudent = Student & { name?: string };
 
 /** Upgrades a student record written before first/last names were tracked separately. */
 export function migrateStudent(s: LegacyStudent): Student {

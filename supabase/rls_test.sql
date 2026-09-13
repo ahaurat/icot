@@ -15,9 +15,9 @@ set local role authenticated;
 
 insert into classes (id, name, seat_rows, seat_cols)
   values ('a1111111-1111-1111-1111-111111111111', 'A Math', 6, 6);
-insert into students (id, class_id, name, seat_index, active)
+insert into students (id, class_id, first_name, last_name, seat_index, active)
   values ('a2222222-2222-2222-2222-222222222222',
-          'a1111111-1111-1111-1111-111111111111', 'Alice', 0, true);
+          'a1111111-1111-1111-1111-111111111111', 'Alice', '', 0, true);
 insert into events (id, student_id, class_id, category_key, type, started_at)
   values ('a3333333-3333-3333-3333-333333333333',
           'a2222222-2222-2222-2222-222222222222',
@@ -35,9 +35,9 @@ set local role authenticated;
 
 insert into classes (id, name)
   values ('b1111111-1111-1111-1111-111111111111', 'B Science');
-insert into students (id, class_id, name)
+insert into students (id, class_id, first_name, last_name)
   values ('b2222222-2222-2222-2222-222222222222',
-          'b1111111-1111-1111-1111-111111111111', 'Bob');
+          'b1111111-1111-1111-1111-111111111111', 'Bob', '');
 insert into events (id, student_id, class_id, category_key, type, started_at)
   values ('b3333333-3333-3333-3333-333333333333',
           'b2222222-2222-2222-2222-222222222222',
@@ -52,7 +52,7 @@ begin
   assert (select count(*) from events)   = 1, 'B should see exactly 1 event';
   assert (select count(*) from settings) = 1, 'B should see exactly 1 settings row';
   assert (select name from classes) = 'B Science', 'B should see only B''s class';
-  assert (select name from students) = 'Bob', 'B should see only B''s student';
+  assert (select first_name from students) = 'Bob', 'B should see only B''s student';
   assert (select category_key from events) = 'cellphone', 'B should see only B''s event';
   assert (select school_year_start from settings) = date '2025-09-01',
          'B should see only B''s settings';
@@ -95,7 +95,7 @@ begin
   assert (select name from classes) = 'A Math', 'A should see only A''s class';
   assert (select count(*) from students) = 1, 'A should see exactly 1 student';
   assert (select count(*) from events)   = 1, 'A should see exactly 1 event';
-  assert (select name from students) = 'Alice', 'A should see only A''s student';
+  assert (select first_name from students) = 'Alice', 'A should see only A''s student';
   assert (select category_key from events) = 'bathroom', 'A should see only A''s event';
   assert (select school_year_start from settings) = date '2026-08-01',
          'A should see only A''s settings';

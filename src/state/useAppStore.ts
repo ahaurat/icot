@@ -15,6 +15,7 @@ import { normalizeSeatLayout, placementForLayout, planReseat } from "../utils/se
 import { buildSeedData } from "../data/seed";
 import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
+import { migrateStudent, type LegacyStudent } from "../data/localStore";
 import { newId } from "../utils/id";
 import { elapsedSeconds, todayDateKey } from "../utils/time";
 import { isPickableStudent, pickStudent } from "../utils/randomPicker";
@@ -493,7 +494,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   importData(data) {
     const settings = withSettingsDefaults(data.settings);
-    const coerced = { ...data, settings };
+    const students = (data.students as LegacyStudent[]).map(migrateStudent);
+    const coerced = { ...data, settings, students };
     set({
       classes: coerced.classes,
       students: coerced.students,
