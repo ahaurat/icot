@@ -13,10 +13,10 @@ export default function LogMinutesDialog({
   onClose: () => void;
 }) {
   const [customMode, setCustomMode] = useState(false);
-  const [customValue, setCustomValue] = useState(1);
+  const [customValue, setCustomValue] = useState("1");
 
   function logAndClose(minutes: number) {
-    if (minutes > 0) onLog(minutes);
+    if (Number.isFinite(minutes) && minutes > 0) onLog(minutes);
     onClose();
   }
 
@@ -33,12 +33,12 @@ export default function LogMinutesDialog({
               autoFocus
               className="w-20 rounded border p-2"
               value={customValue}
-              onChange={(e) => setCustomValue(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setCustomValue(e.target.value)}
             />
             <span className="text-sm text-gray-600">min</span>
             <button
               type="button"
-              onClick={() => logAndClose(customValue)}
+              onClick={() => logAndClose(Math.floor(Number(customValue)))}
               className="rounded bg-blue-500 px-4 py-2 text-sm text-white"
             >
               Log
