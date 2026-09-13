@@ -9,20 +9,11 @@ export default function CreateGroupsModal({
   classId: string;
   onClose: () => void;
 }) {
-  const students = useAppStore((s) => s.students);
   const createGroups = useAppStore((s) => s.createGroups);
-  const clearGroups = useAppStore((s) => s.clearGroups);
   const [groupSize, setGroupSize] = useState(4);
-
-  const hasGroups = students.some((s) => s.classId === classId && s.groupColor);
 
   function handleCreate() {
     createGroups(classId, groupSize);
-    onClose();
-  }
-
-  function handleClear() {
-    clearGroups(classId);
     onClose();
   }
 
@@ -40,15 +31,6 @@ export default function CreateGroupsModal({
           />
         </label>
         <div className="flex justify-end gap-2">
-          {hasGroups && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="rounded border px-3 py-2 text-sm"
-            >
-              Clear groups
-            </button>
-          )}
           <button
             type="button"
             onClick={handleCreate}

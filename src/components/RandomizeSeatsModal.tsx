@@ -10,7 +10,7 @@ export default function RandomizeSeatsModal({
 }) {
   const randomizeSeats = useAppStore((s) => s.randomizeSeats);
 
-  function handle(mode: "save" | "today") {
+  function handle(mode: "save" | "temporary") {
     randomizeSeats(classId, mode);
     onClose();
   }
@@ -20,7 +20,7 @@ export default function RandomizeSeatsModal({
       <div className="space-y-4">
         <p className="text-sm text-gray-700">
           Shuffle where currently-seated students sit. Choose whether this becomes the new
-          main chart, or reverts back automatically tomorrow.
+          main chart, or stays until you clear it.
         </p>
         <div className="flex flex-col gap-2">
           <button
@@ -32,10 +32,10 @@ export default function RandomizeSeatsModal({
           </button>
           <button
             type="button"
-            onClick={() => handle("today")}
+            onClick={() => handle("temporary")}
             className="rounded border px-4 py-2 text-sm"
           >
-            Just for today
+            Just temporarily
           </button>
         </div>
       </div>

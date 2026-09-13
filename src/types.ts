@@ -79,9 +79,9 @@ export interface ClassPickerProgress {
 }
 
 export interface SeatingSnapshot {
-  /** Local YYYY-MM-DD the snapshot was captured; used to detect the next calendar day. */
-  savedAt: string;
-  /** seatIndex per student id at the time "Randomize seats -> today only" was used. */
+  /** seatIndex per student id at the time "Randomize seats" or "Create groups" was
+      last applied from the default chart. Restored by "Clear groups"/"Clear random
+      seating", which also deletes this entry. */
   seats: Record<string, number>;
 }
 
@@ -102,7 +102,9 @@ export interface Settings {
   randomPicker: RandomPickerSettings;
   /** Per-class cycle progress for the random picker, keyed by classId. */
   pickerProgress: Record<string, ClassPickerProgress>;
-  /** Per-class "randomize seats -> today only" snapshot, keyed by classId. */
+  /** Per-class "restore the default chart" snapshot, keyed by classId; present
+      whenever that class's chart isn't the default (temporarily randomized or
+      grouped). */
   seatingSnapshots: Record<string, SeatingSnapshot>;
   /** Which date range the standing "Period" totals column reflects. */
   viewPeriod: ViewPeriod;

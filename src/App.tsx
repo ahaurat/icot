@@ -31,6 +31,9 @@ function MainApp() {
   const loaded = useAppStore((s) => s.loaded);
   const error = useAppStore((s) => s.error);
   const currentClassId = useAppStore((s) => s.currentClassId);
+  const students = useAppStore((s) => s.students);
+  const seatingSnapshots = useAppStore((s) => s.settings.seatingSnapshots);
+  const restoreMainSeating = useAppStore((s) => s.restoreMainSeating);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -80,6 +83,10 @@ function MainApp() {
     );
   }
 
+  const hasNonDefaultSeating = currentClassId != null && seatingSnapshots[currentClassId] != null;
+  const isGrouped = students.some((s) => s.classId === currentClassId && s.groupColor != null);
+  const restoreLabel = !hasNonDefaultSeating ? null : isGrouped ? "Clear groups" : "Clear random seating";
+
   return (
     <>
       <div className="mx-auto max-w-5xl p-4 print:hidden">
@@ -98,6 +105,18 @@ function MainApp() {
         {error && (
           <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {restoreLabel && (
+          <div className="mb-3 text-center">
+            <button
+              type="button"
+              onClick={() => currentClassId && restoreMainSeating(currentClassId)}
+              className="text-sm text-gray-500 underline hover:text-gray-700"
+            >
+              {restoreLabel}
+            </button>
           </div>
         )}
 

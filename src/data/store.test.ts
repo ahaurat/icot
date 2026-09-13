@@ -43,10 +43,10 @@ describe("withSettingsDefaults", () => {
   it("preserves provided seating snapshots", () => {
     const s = withSettingsDefaults({
       schoolYearStart: "2025-08-01",
-      seatingSnapshots: { "class-1": { savedAt: "2025-09-01", seats: { s1: 3 } } },
+      seatingSnapshots: { "class-1": { seats: { s1: 3 } } },
     });
     expect(s.seatingSnapshots).toEqual({
-      "class-1": { savedAt: "2025-09-01", seats: { s1: 3 } },
+      "class-1": { seats: { s1: 3 } },
     });
   });
   it("supplies default view period settings when none are stored", () => {
