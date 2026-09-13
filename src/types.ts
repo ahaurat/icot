@@ -28,7 +28,8 @@ export interface ClassRoom {
 export interface Student {
   id: string;
   classId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   /** 0-based desk position within the class grid, or null if unseated. */
   seatIndex: number | null;
   /** Soft-delete flag: inactive students keep their history but leave the chart. */
