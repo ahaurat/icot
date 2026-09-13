@@ -4,7 +4,9 @@ import { useAppStore } from "./useAppStore";
 function seedOneStudent() {
   useAppStore.setState({
     classes: [{ id: "c1", name: "Period 1", seatRows: 5, seatCols: 6, archivedAt: null }],
-    students: [{ id: "s1", classId: "c1", name: "Alex", seatIndex: 0, active: true }],
+    students: [
+      { id: "s1", classId: "c1", name: "Alex", seatIndex: 0, active: true, groupColor: null },
+    ],
     events: [],
   });
 }

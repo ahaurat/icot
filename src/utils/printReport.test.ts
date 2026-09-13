@@ -19,12 +19,54 @@ const archivedClass: ClassRoom = {
   archivedAt: "2025-06-01T00:00:00.000Z",
 };
 
-const alice: Student = { id: "s1", classId: "c1", name: "Alice", seatIndex: 1, active: true };
-const bob: Student = { id: "s2", classId: "c1", name: "Bob", seatIndex: 0, active: true };
-const inactive: Student = { id: "s3", classId: "c1", name: "Zoe", seatIndex: 2, active: false };
-const charlie: Student = { id: "s4", classId: "c1", name: "Charlie", seatIndex: 5, active: true };
-const zach: Student = { id: "s5", classId: "c1", name: "Zach", seatIndex: null, active: true };
-const amy: Student = { id: "s6", classId: "c1", name: "Amy", seatIndex: null, active: true };
+const alice: Student = {
+  id: "s1",
+  classId: "c1",
+  name: "Alice",
+  seatIndex: 1,
+  active: true,
+  groupColor: null,
+};
+const bob: Student = {
+  id: "s2",
+  classId: "c1",
+  name: "Bob",
+  seatIndex: 0,
+  active: true,
+  groupColor: null,
+};
+const inactive: Student = {
+  id: "s3",
+  classId: "c1",
+  name: "Zoe",
+  seatIndex: 2,
+  active: false,
+  groupColor: null,
+};
+const charlie: Student = {
+  id: "s4",
+  classId: "c1",
+  name: "Charlie",
+  seatIndex: 5,
+  active: true,
+  groupColor: null,
+};
+const zach: Student = {
+  id: "s5",
+  classId: "c1",
+  name: "Zach",
+  seatIndex: null,
+  active: true,
+  groupColor: null,
+};
+const amy: Student = {
+  id: "s6",
+  classId: "c1",
+  name: "Amy",
+  seatIndex: null,
+  active: true,
+  groupColor: null,
+};
 
 function makeEvent(patch: Partial<AppEvent>): AppEvent {
   return {
@@ -71,7 +113,14 @@ describe("buildPrintReports", () => {
 
   it("excludes archived classes and orders active classes by period", () => {
     const period3: ClassRoom = { id: "c3", name: "Period 3", seatRows: 6, seatCols: 6, archivedAt: null };
-    const carl: Student = { id: "s4", classId: "c3", name: "Carl", seatIndex: 0, active: true };
+    const carl: Student = {
+      id: "s4",
+      classId: "c3",
+      name: "Carl",
+      seatIndex: 0,
+      active: true,
+      groupColor: null,
+    };
     const reports = buildPrintReports([period3, classA, archivedClass], [alice, bob, carl], [], range);
     expect(reports.map((r) => r.classRoom.id)).toEqual(["c1", "c1", "c3"]);
   });
