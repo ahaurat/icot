@@ -92,8 +92,8 @@ export default function LoginScreen({ authError }: { authError?: string | null }
         className="w-full max-w-sm space-y-4 rounded-lg bg-white p-6 shadow"
       >
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">ICOT</h1>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">ICOT</h1>
+          <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
             In class. On task.
           </p>
           {(isSignup || isReset) && (
@@ -136,19 +136,6 @@ export default function LoginScreen({ authError }: { authError?: string | null }
           </label>
         )}
 
-        {!isSignup && !isReset && (
-          <p className="text-right text-sm">
-            <button
-              type="button"
-              disabled={busy}
-              className="font-medium text-blue-600 underline"
-              onClick={() => switchMode("reset")}
-            >
-              Forgot password?
-            </button>
-          </p>
-        )}
-
         {error && (
           <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
@@ -173,8 +160,8 @@ export default function LoginScreen({ authError }: { authError?: string | null }
                 : "Sign in"}
         </button>
 
-        <p className="text-center text-sm text-gray-600">
-          {isReset ? (
+        {isReset ? (
+          <p className="text-center text-sm text-gray-600">
             <button
               type="button"
               disabled={busy}
@@ -183,32 +170,40 @@ export default function LoginScreen({ authError }: { authError?: string | null }
             >
               Back to sign in
             </button>
-          ) : isSignup ? (
-            <>
-              Already have an account?{" "}
-              <button
-                type="button"
-                disabled={busy}
-                className="font-medium text-blue-600 underline"
-                onClick={() => switchMode("signin")}
-              >
-                Sign in
-              </button>
-            </>
-          ) : (
-            <>
-              New here?{" "}
-              <button
-                type="button"
-                disabled={busy}
-                className="font-medium text-blue-600 underline"
-                onClick={() => switchMode("signup")}
-              >
-                Create an account
-              </button>
-            </>
-          )}
-        </p>
+          </p>
+        ) : isSignup ? (
+          <p className="text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <button
+              type="button"
+              disabled={busy}
+              className="font-medium text-blue-600 underline"
+              onClick={() => switchMode("signin")}
+            >
+              Sign in
+            </button>
+          </p>
+        ) : (
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <button
+              type="button"
+              disabled={busy}
+              className="font-medium text-blue-600 underline"
+              onClick={() => switchMode("reset")}
+            >
+              Forgot password?
+            </button>
+            <span className="h-3.5 w-px bg-gray-300" />
+            <button
+              type="button"
+              disabled={busy}
+              className="font-medium text-blue-600 underline"
+              onClick={() => switchMode("signup")}
+            >
+              Create an account
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );
