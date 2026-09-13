@@ -4,6 +4,7 @@ import { useAppStore } from "../state/useAppStore";
 import { formatDuration } from "../utils/time";
 import { buildPrintDocumentTitle, buildPrintReports, formatPrintRangeLabel } from "../utils/printReport";
 import type { PrintRequest } from "../utils/printReport";
+import { studentFullName } from "../utils/studentName";
 
 function formatCategoryTotal(value: number, type: "timed" | "count"): string {
   if (type === "count") return value === 0 ? "—" : `${value}×`;
@@ -43,7 +44,7 @@ export default function PrintReport({
         const timedTotal = TIMED_CATEGORIES.reduce((sum, c) => sum + r.totals[c.key], 0);
         return (
           <section key={r.student.id} className={`p-6 ${i > 0 ? "break-before-page" : ""}`}>
-            <h1 className="text-xl font-bold">{r.student.name}</h1>
+            <h1 className="text-xl font-bold">{studentFullName(r.student)}</h1>
             <p className="mb-4 text-sm text-gray-600">
               {r.classRoom.name} · {rangeLabel}
             </p>

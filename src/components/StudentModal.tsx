@@ -4,6 +4,7 @@ import { CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
 import { useAppStore } from "../state/useAppStore";
 import { usePeriodRangeLabel, useStudentTotals } from "../hooks/useAggregates";
 import { formatDuration } from "../utils/time";
+import { studentFullName } from "../utils/studentName";
 import EventHistory from "./EventHistory";
 import LogMinutesDialog from "./LogMinutesDialog";
 import Modal from "./Modal";
@@ -42,7 +43,7 @@ export default function StudentModal({
   }
 
   return (
-    <Modal title={student.name} onClose={onClose}>
+    <Modal title={studentFullName(student)} onClose={onClose}>
       <div className="space-y-5">
         <div>
           <p className="mb-2 text-sm font-medium text-gray-600">Log an event</p>
@@ -78,7 +79,7 @@ export default function StudentModal({
           <TotalsTable studentId={student.id} />
           {timedPeriod > 0 && (
             <p className="mt-2 text-sm text-gray-600">
-              {student.name.split(" ")[0]} has been off-task for a total of{" "}
+              {student.firstName} has been off-task for a total of{" "}
               <strong>{formatDuration(timedPeriod)}</strong> during{" "}
               {periodLabel.charAt(0).toLowerCase() + periodLabel.slice(1)}.
             </p>
