@@ -92,8 +92,8 @@ export default function LoginScreen({ authError }: { authError?: string | null }
         className="w-full max-w-sm space-y-4 rounded-lg bg-white p-6 shadow"
       >
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">ICOT</h1>
-          <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
+          <h1 className="text-5xl font-extrabold tracking-tight text-gray-900">ICOT</h1>
+          <p className="mt-2 text-base font-semibold uppercase tracking-[0.08em] text-gray-500">
             In class. On task.
           </p>
           {(isSignup || isReset) && (
