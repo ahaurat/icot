@@ -51,6 +51,7 @@ interface AppState extends AppData {
   startTimer: (studentId: string, categoryKey: CategoryKey) => void;
   stopTimer: (eventId: string) => void;
   logCount: (studentId: string, categoryKey: CategoryKey) => void;
+  logDuration: (studentId: string, categoryKey: CategoryKey, minutes: number) => void;
   updateEvent: (id: string, patch: Partial<AppEvent>) => void;
   deleteEvent: (id: string) => void;
 
@@ -204,6 +205,31 @@ export const useAppStore = create<AppState>((set, get) => ({
       startedAt: ts,
       endedAt: null,
       durationSeconds: null,
+      open: false,
+      createdAt: ts,
+      updatedAt: ts,
+    };
+    set((s) => ({ events: [...s.events, event] }));
+    persist(store.upsertEvent(event));
+  },
+
+  logDuration(studentId, categoryKey, minutes) {
+    const cat = CATEGORY_BY_KEY[categoryKey];
+    if (cat.type !== "timed") return;
+    const student = get().students.find((s) => s.id === studentId);
+    if (!student) return;
+
+    const duration = Math.max(0, Math.round(minutes * 60));
+    const ts = nowIso();
+    const event: AppEvent = {
+      id: newId(),
+      studentId,
+      classId: student.classId,
+      categoryKey,
+      type: "timed",
+      startedAt: ts,
+      endedAt: new Date(new Date(ts).getTime() + duration * 1000).toISOString(),
+      durationSeconds: duration,
       open: false,
       createdAt: ts,
       updatedAt: ts,

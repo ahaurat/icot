@@ -9,6 +9,7 @@ export type CategoryKey =
   | "office"
   | "sleeping"
   | "other"
+  | "tardy"
   | "cellphone"
   | "headphones"
   | "extracredit";

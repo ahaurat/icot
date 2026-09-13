@@ -10,6 +10,8 @@ export interface CategoryConfig {
   emoji: string;
   /** Past-tense phrase for the daily summary, e.g. "went to the bathroom". */
   summaryVerb: string;
+  /** True when the duration is typed in by the teacher (e.g. Tardy) rather than measured by starting/stopping a live timer. Only meaningful when type === "timed". */
+  manualDuration?: boolean;
 }
 
 // Order here drives button order in the student modal.
@@ -20,6 +22,7 @@ export const CATEGORIES: CategoryConfig[] = [
   { key: "office", label: "Office", type: "timed", color: "#3b82f6", emoji: "🏢", summaryVerb: "went to the office" },
   { key: "sleeping", label: "Sleeping", type: "timed", color: "#ec4899", emoji: "😴", summaryVerb: "slept" },
   { key: "other", label: "Other", type: "timed", color: "#ef4444", emoji: "🚪", summaryVerb: "was out of class (other)" },
+  { key: "tardy", label: "Tardy", type: "timed", manualDuration: true, color: "#6366f1", emoji: "⏰", summaryVerb: "was tardy" },
   { key: "cellphone", label: "Cell Phone", type: "count", color: "#a855f7", emoji: "📱", summaryVerb: "had their cell phone out" },
   { key: "headphones", label: "Headphones", type: "count", color: "#6b7280", emoji: "🎧", summaryVerb: "had headphones in" },
   { key: "extracredit", label: "Extra Credit", type: "count", color: "#0d9488", emoji: "⭐", summaryVerb: "earned extra credit" },
