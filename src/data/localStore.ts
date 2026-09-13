@@ -7,11 +7,12 @@ const STORAGE_KEY = "icot:data:v1";
 
 export type LegacyStudent = Student & { name?: string };
 
-/** Upgrades a student record written before first/last names were tracked separately. */
+/** Upgrades a student record written before first/last names (or groupColor) were tracked. */
 export function migrateStudent(s: LegacyStudent): Student {
   const { name, firstName, lastName, ...rest } = s;
-  if (firstName != null && lastName != null) return { ...rest, firstName, lastName };
-  return { ...rest, ...splitLegacyName(name ?? "") };
+  const nameFields =
+    firstName != null && lastName != null ? { firstName, lastName } : splitLegacyName(name ?? "");
+  return { ...rest, ...nameFields, groupColor: rest.groupColor ?? null };
 }
 
 function read(): AppData {

@@ -8,7 +8,17 @@ interface HeaderProps {
   onOpenSummary: () => void;
   onOpenSettings: () => void;
   onPickedStudent: (studentId: string) => void;
+  hasPickedStudent: boolean;
+  onClearPickedStudent: () => void;
+  onOpenRandomizeSeats: () => void;
+  onOpenCreateGroups: () => void;
 }
+
+// Every select/button in this row shares a fixed height so a browser's native
+// <select> chrome (which can render taller than a same-padding <button>)
+// doesn't throw off vertical alignment.
+const controlClass =
+  "flex h-9 items-center justify-center rounded px-4 text-sm font-medium max-[800px]:h-8 max-[800px]:px-2";
 
 export default function Header({
   editSeating,
@@ -16,6 +26,10 @@ export default function Header({
   onOpenSummary,
   onOpenSettings,
   onPickedStudent,
+  hasPickedStudent,
+  onClearPickedStudent,
+  onOpenRandomizeSeats,
+  onOpenCreateGroups,
 }: HeaderProps) {
   const allClasses = useAppStore((s) => s.classes);
   const classes = sortByPeriod(allClasses.filter((c) => !c.archivedAt));
@@ -39,7 +53,7 @@ export default function Header({
       <h1 className="text-3xl font-bold max-[800px]:text-xl">ICOT</h1>
 
       <select
-        className="rounded border p-2 max-[800px]:p-1 max-[800px]:text-sm"
+        className="flex h-9 items-center rounded border px-2 text-sm max-[800px]:h-8 max-[800px]:px-1"
         value={currentClassId ?? ""}
         onChange={(e) => setCurrentClass(e.target.value)}
       >
@@ -50,30 +64,62 @@ export default function Header({
         ))}
       </select>
 
-      <button
-        type="button"
-        onClick={handlePick}
-        disabled={!hasActiveStudents}
-        className="rounded bg-purple-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 max-[800px]:px-2 max-[800px]:py-1 max-[800px]:text-sm"
-      >
-        <span className="max-[800px]:hidden">Choose random student</span>
-        <span className="hidden max-[800px]:inline">Pick student</span>
-      </button>
+      {editSeating ? (
+        <>
+          <button
+            type="button"
+            onClick={onOpenRandomizeSeats}
+            className={`${controlClass} bg-purple-600 text-white`}
+          >
+            <span className="max-[800px]:hidden">Randomize seats…</span>
+            <span className="hidden max-[800px]:inline">Randomize…</span>
+          </button>
+          <button
+            type="button"
+            onClick={onOpenCreateGroups}
+            className={`${controlClass} bg-purple-600 text-white`}
+          >
+            <span className="max-[800px]:hidden">Create groups…</span>
+            <span className="hidden max-[800px]:inline">Groups…</span>
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={handlePick}
+            disabled={!hasActiveStudents}
+            className={`${controlClass} bg-purple-600 text-white disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            <span className="max-[800px]:hidden">Choose random student</span>
+            <span className="hidden max-[800px]:inline">Pick student</span>
+          </button>
+          {hasPickedStudent && (
+            <button
+              type="button"
+              onClick={onClearPickedStudent}
+              className="flex h-9 items-center text-sm text-gray-500 underline hover:text-gray-700"
+            >
+              Clear
+            </button>
+          )}
+        </>
+      )}
 
       <div className="ml-auto flex items-center gap-2 max-[800px]:gap-1">
-        <button
-          type="button"
-          onClick={onOpenSummary}
-          className="rounded bg-indigo-500 px-4 py-2 text-white max-[800px]:px-2 max-[800px]:py-1 max-[800px]:text-sm"
-        >
-          Summary
-        </button>
+        {!editSeating && (
+          <button
+            type="button"
+            onClick={onOpenSummary}
+            className={`${controlClass} bg-indigo-500 text-white`}
+          >
+            Summary
+          </button>
+        )}
         <button
           type="button"
           onClick={onToggleEditSeating}
-          className={`rounded px-4 py-2 text-white max-[800px]:px-2 max-[800px]:py-1 max-[800px]:text-sm ${
-            editSeating ? "bg-green-600" : "bg-gray-600"
-          }`}
+          className={`${controlClass} text-white ${editSeating ? "bg-green-600" : "bg-gray-600"}`}
         >
           <span className="max-[800px]:hidden">
             {editSeating ? "Done moving seats" : "Edit seating"}

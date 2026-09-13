@@ -25,12 +25,16 @@ export default function Seat({ index, student, editMode, onOpen, highlighted, pi
   });
 
   const ringClass = isOver ? "ring-2 ring-blue-500" : highlighted ? "ring-4 ring-yellow-400" : "";
+  const backgroundClass = student
+    ? student.groupColor
+      ? ""
+      : "bg-gray-300"
+    : "bg-gray-100 border-dashed";
   return (
     <div
       ref={setDropRef}
-      className={`relative h-20 rounded border text-center text-sm transition-colors ${
-        student ? "bg-gray-300" : "bg-gray-100 border-dashed"
-      } ${ringClass}`}
+      className={`relative h-20 rounded border text-center text-sm transition-colors ${backgroundClass} ${ringClass}`}
+      style={student?.groupColor ? { backgroundColor: student.groupColor } : undefined}
     >
       {highlighted && (
         <span

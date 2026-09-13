@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
+import { DEFAULT_SEAT_LAYOUT, DEFAULT_SEAT_ORDER } from "../constants/seatOrder";
 import {
   clearOrder,
   deskCount,
@@ -8,6 +8,7 @@ import {
   placementForLayout,
   planReseat,
   resizeLayout,
+  spatialSweepOrder,
   toggleDeskCell,
 } from "./seatLayout";
 import type { SeatLayout } from "../types";
@@ -90,6 +91,56 @@ describe("clearOrder", () => {
   it("removes every desk", () => {
     const layout: SeatLayout = { rows: 2, cols: 2, seatOrder: [0, 1] };
     expect(clearOrder(layout)).toEqual({ rows: 2, cols: 2, seatOrder: [] });
+  });
+});
+
+describe("spatialSweepOrder", () => {
+  it("returns an empty array for no desks", () => {
+    expect(spatialSweepOrder([], DEFAULT_SEAT_LAYOUT)).toEqual([]);
+  });
+
+  it("preserves the exact set of desk indices", () => {
+    const desks = [2, 3, 8, 9, 14, 15];
+    const layout: SeatLayout = { rows: 3, cols: 6, seatOrder: desks };
+    expect(spatialSweepOrder(desks, layout).sort((a, b) => a - b)).toEqual(
+      [...desks].sort((a, b) => a - b)
+    );
+  });
+
+  it("sweeps a dense two-column block in boustrophedon order", () => {
+    // Columns 2-3 across 4 rows on a 6-col grid.
+    const desks = [2, 3, 8, 9, 14, 15, 20, 21];
+    const layout: SeatLayout = { rows: 4, cols: 6, seatOrder: desks };
+    expect(spatialSweepOrder(desks, layout)).toEqual([2, 3, 9, 8, 14, 15, 21, 20]);
+  });
+
+  it("keeps every consecutive pair grid-adjacent for DEFAULT_SEAT_ORDER's two-column demo class", () => {
+    const firstTwelve = DEFAULT_SEAT_ORDER.slice(0, 12);
+    const result = spatialSweepOrder(firstTwelve, DEFAULT_SEAT_LAYOUT);
+    for (let i = 1; i < result.length; i++) {
+      const prevRow = Math.floor(result[i - 1] / 6);
+      const prevCol = result[i - 1] % 6;
+      const row = Math.floor(result[i] / 6);
+      const col = result[i] % 6;
+      const adjacent =
+        (prevRow === row && Math.abs(prevCol - col) === 1) ||
+        (prevCol === col && Math.abs(prevRow - row) === 1);
+      expect(adjacent).toBe(true);
+    }
+  });
+
+  it("documents its limit: a row with desks on both sides of a gap is swept straight across it", () => {
+    // A 6-col grid with a two-column gap in the middle of every row (desks at
+    // cols 0,1 and 4,5, cols 2-3 are aisles) — a real, supported layout shape.
+    const desks = [0, 1, 4, 5];
+    const layout: SeatLayout = { rows: 1, cols: 6, seatOrder: desks };
+    const result = spatialSweepOrder(desks, layout);
+    // Ideally this row would sweep as two separate near clusters; instead the
+    // single row's columns are all swept together, landing col 1 next to
+    // col 4 even though they're on opposite sides of the gap.
+    expect(result).toEqual([0, 1, 4, 5]);
+    const gapCrossed = result.some((seat, i) => i > 0 && Math.abs(seat - result[i - 1]) > 1);
+    expect(gapCrossed).toBe(true);
   });
 });
 

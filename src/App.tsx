@@ -6,6 +6,8 @@ import SeatingChart from "./components/SeatingChart";
 import StudentModal from "./components/StudentModal";
 import SettingsModal from "./components/SettingsModal";
 import SummaryModal from "./components/SummaryModal";
+import RandomizeSeatsModal from "./components/RandomizeSeatsModal";
+import CreateGroupsModal from "./components/CreateGroupsModal";
 import PrintReport from "./components/PrintReport";
 import LoginScreen from "./components/LoginScreen";
 import ResetPasswordScreen from "./components/ResetPasswordScreen";
@@ -29,11 +31,16 @@ function MainApp() {
   const loaded = useAppStore((s) => s.loaded);
   const error = useAppStore((s) => s.error);
   const currentClassId = useAppStore((s) => s.currentClassId);
+  const students = useAppStore((s) => s.students);
+  const seatingSnapshots = useAppStore((s) => s.settings.seatingSnapshots);
+  const restoreMainSeating = useAppStore((s) => s.restoreMainSeating);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [editSeating, setEditSeating] = useState(false);
+  const [randomizeOpen, setRandomizeOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
   const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
   const [pickNonce, setPickNonce] = useState(0);
   const [printRequest, setPrintRequest] = useState<PrintRequest | null>(null);
@@ -76,6 +83,10 @@ function MainApp() {
     );
   }
 
+  const hasNonDefaultSeating = currentClassId != null && seatingSnapshots[currentClassId] != null;
+  const isGrouped = students.some((s) => s.classId === currentClassId && s.groupColor != null);
+  const restoreLabel = !hasNonDefaultSeating ? null : isGrouped ? "Clear groups" : "Clear random seating";
+
   return (
     <>
       <div className="mx-auto max-w-5xl p-4 print:hidden">
@@ -85,11 +96,27 @@ function MainApp() {
           onOpenSummary={() => setSummaryOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
           onPickedStudent={handlePickedStudent}
+          hasPickedStudent={pickedStudentId !== null}
+          onClearPickedStudent={() => setPickedStudentId(null)}
+          onOpenRandomizeSeats={() => setRandomizeOpen(true)}
+          onOpenCreateGroups={() => setGroupsOpen(true)}
         />
 
         {error && (
           <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {restoreLabel && (
+          <div className="mb-3 text-center">
+            <button
+              type="button"
+              onClick={() => currentClassId && restoreMainSeating(currentClassId)}
+              className="text-sm text-gray-500 underline hover:text-gray-700"
+            >
+              {restoreLabel}
+            </button>
           </div>
         )}
 
@@ -118,6 +145,14 @@ function MainApp() {
         )}
 
         {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+
+        {randomizeOpen && currentClassId && (
+          <RandomizeSeatsModal classId={currentClassId} onClose={() => setRandomizeOpen(false)} />
+        )}
+
+        {groupsOpen && currentClassId && (
+          <CreateGroupsModal classId={currentClassId} onClose={() => setGroupsOpen(false)} />
+        )}
       </div>
 
       {printRequest && <PrintReport request={printRequest} onDone={handlePrintDone} />}

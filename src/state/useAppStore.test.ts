@@ -5,7 +5,15 @@ function seedOneStudent() {
   useAppStore.setState({
     classes: [{ id: "c1", name: "Period 1", seatRows: 5, seatCols: 6, archivedAt: null }],
     students: [
-      { id: "s1", classId: "c1", firstName: "Alex", lastName: "Rivera", seatIndex: 0, active: true },
+      {
+        id: "s1",
+        classId: "c1",
+        firstName: "Alex",
+        lastName: "Rivera",
+        seatIndex: 0,
+        active: true,
+        groupColor: null,
+      },
     ],
     events: [],
   });

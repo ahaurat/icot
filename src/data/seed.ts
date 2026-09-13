@@ -39,6 +39,7 @@ export function buildSeedData(): AppData {
     lastName,
     seatIndex: placement[i],
     active: true,
+    groupColor: null,
   }));
 
   return {

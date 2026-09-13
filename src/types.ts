@@ -34,6 +34,8 @@ export interface Student {
   seatIndex: number | null;
   /** Soft-delete flag: inactive students keep their history but leave the chart. */
   active: boolean;
+  /** Background color for "Create groups" display, or null when not grouped. */
+  groupColor: string | null;
 }
 
 export interface AppEvent {
@@ -77,6 +79,13 @@ export interface ClassPickerProgress {
   cycleStartDate: string;
 }
 
+export interface SeatingSnapshot {
+  /** seatIndex per student id at the time "Randomize seats" or "Create groups" was
+      last applied from the default chart. Restored by "Clear groups"/"Clear random
+      seating", which also deletes this entry. */
+  seats: Record<string, number>;
+}
+
 export interface ViewPeriod {
   mode: "year" | "custom";
   /** YYYY-MM-DD; only meaningful when mode === "custom". */
@@ -94,6 +103,10 @@ export interface Settings {
   randomPicker: RandomPickerSettings;
   /** Per-class cycle progress for the random picker, keyed by classId. */
   pickerProgress: Record<string, ClassPickerProgress>;
+  /** Per-class "restore the default chart" snapshot, keyed by classId; present
+      whenever that class's chart isn't the default (temporarily randomized or
+      grouped). */
+  seatingSnapshots: Record<string, SeatingSnapshot>;
   /** Which date range the standing "Period" totals column reflects. */
   viewPeriod: ViewPeriod;
 }

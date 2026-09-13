@@ -88,3 +88,32 @@ export function planReseat(
   const placement = placementForLayout(layout, seated.length);
   return seated.map((s, i) => ({ id: s.id, seatIndex: placement[i] }));
 }
+
+/**
+ * Reorder desk indices into a boustrophedon (row-by-row, alternating
+ * direction) sweep, so a contiguous slice of the result stays close together
+ * spatially — even when the input order (e.g. a teacher's custom seat-order
+ * numbering) jumps between rows or columns. This is a best-effort heuristic,
+ * not a guarantee: within a dense row (or a row with a gap that runs the
+ * full width, like a center aisle applied to every row) it always lands on a
+ * real adjacent step, but a row with desks on both sides of a gap (e.g. two
+ * far-apart blocks in the same row) is swept straight across that gap, so a
+ * slice can still land two students on opposite sides of it.
+ */
+export function spatialSweepOrder(deskIndices: number[], layout: SeatLayout): number[] {
+  const colsByRow = new Map<number, number[]>();
+  for (const index of deskIndices) {
+    const row = Math.floor(index / layout.cols);
+    const col = index % layout.cols;
+    const bucket = colsByRow.get(row) ?? [];
+    bucket.push(col);
+    colsByRow.set(row, bucket);
+  }
+  const rows = [...colsByRow.keys()].sort((a, b) => a - b);
+  const ordered: number[] = [];
+  rows.forEach((row, i) => {
+    const rowCols = colsByRow.get(row)!.sort((a, b) => (i % 2 === 0 ? a - b : b - a));
+    for (const col of rowCols) ordered.push(row * layout.cols + col);
+  });
+  return ordered;
+}

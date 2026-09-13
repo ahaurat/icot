@@ -22,13 +22,14 @@ create table if not exists classes (
 );
 
 create table if not exists students (
-  id         uuid primary key,
-  owner_id   uuid not null default auth.uid(),
-  class_id   uuid not null references classes(id) on delete cascade,
-  first_name text not null,
-  last_name  text not null,
-  seat_index int,
-  active     boolean not null default true
+  id          uuid primary key,
+  owner_id    uuid not null default auth.uid(),
+  class_id    uuid not null references classes(id) on delete cascade,
+  first_name  text not null,
+  last_name   text not null,
+  seat_index  int,
+  active      boolean not null default true,
+  group_color text
 );
 
 create table if not exists events (
@@ -51,12 +52,15 @@ create table if not exists settings (
   school_year_start date not null,
   seat_layout       jsonb,
   random_picker     jsonb,
-  picker_progress   jsonb
+  picker_progress   jsonb,
+  seating_snapshots jsonb
 );
 
 -- Existing deployments: add the columns if the table already exists without them.
-alter table settings add column if not exists random_picker   jsonb;
-alter table settings add column if not exists picker_progress jsonb;
+alter table settings add column if not exists random_picker      jsonb;
+alter table settings add column if not exists picker_progress    jsonb;
+alter table settings add column if not exists seating_snapshots  jsonb;
+alter table students add column if not exists group_color        text;
 
 create index if not exists classes_owner_idx  on classes  (owner_id);
 create index if not exists students_owner_idx on students (owner_id);

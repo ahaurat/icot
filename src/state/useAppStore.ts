@@ -11,7 +11,7 @@ import type {
 } from "../types";
 import { CATEGORY_BY_KEY } from "../constants/categories";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
-import { normalizeSeatLayout, placementForLayout, planReseat } from "../utils/seatLayout";
+import { normalizeSeatLayout, placementForLayout, planReseat, spatialSweepOrder } from "../utils/seatLayout";
 import { buildSeedData } from "../data/seed";
 import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
@@ -19,7 +19,9 @@ import { migrateStudent, type LegacyStudent } from "../data/localStore";
 import { newId } from "../utils/id";
 import { elapsedSeconds, todayDateKey } from "../utils/time";
 import { isPickableStudent, pickStudent } from "../utils/randomPicker";
+import { shuffleSeats } from "../utils/seatRandomizer";
 import { sortByPeriod } from "../utils/classSort";
+import { planGroupSeating } from "../utils/groups";
 
 /** The active class to default to: the lowest-period one, so period order (not storage order) wins. */
 function defaultActiveClassId(classes: ClassRoom[]): string | null {
@@ -83,6 +85,11 @@ interface AppState extends AppData {
   // Random student picker
   setRandomPickerSettings: (patch: Partial<RandomPickerSettings>) => void;
   pickRandomStudent: (classId: string) => string | null;
+
+  // Seat randomization
+  randomizeSeats: (classId: string, persistMode: "save" | "temporary") => void;
+  createGroups: (classId: string, groupSize: number) => void;
+  restoreMainSeating: (classId: string) => void;
 }
 
 let initStarted = false;
@@ -131,6 +138,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     seatLayout: DEFAULT_SEAT_LAYOUT,
     randomPicker: { mode: "random", resetDaily: true },
     pickerProgress: {},
+    seatingSnapshots: {},
     viewPeriod: { mode: "year", customStart: "", customEnd: "" },
   },
   loaded: false,
@@ -260,6 +268,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       lastName: lastName.trim(),
       seatIndex,
       active: true,
+      groupColor: null,
     };
     set((s) => ({ students: [...s.students, student] }));
     persist(store.upsertStudent(student));
@@ -355,6 +364,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           lastName: student.lastName,
           seatIndex: placement[i],
           active: true,
+          groupColor: null,
         });
       });
     }
@@ -490,6 +500,150 @@ export const useAppStore = create<AppState>((set, get) => ({
       persist(store.saveSettings(settings));
     }
     return result.studentId;
+  },
+
+  randomizeSeats(classId, persistMode) {
+    const seated = get()
+      .students.filter((s) => s.classId === classId && isPickableStudent(s))
+      .map((s) => ({ id: s.id, seatIndex: s.seatIndex! }));
+    if (seated.length === 0) return;
+
+    const settings = get().settings;
+    let seatingSnapshots = settings.seatingSnapshots;
+
+    if (persistMode === "save") {
+      if (seatingSnapshots[classId]) {
+        const next = { ...seatingSnapshots };
+        delete next[classId];
+        seatingSnapshots = next;
+      }
+    } else if (!seatingSnapshots[classId]) {
+      const seats: Record<string, number> = {};
+      for (const s of seated) seats[s.id] = s.seatIndex;
+      seatingSnapshots = { ...seatingSnapshots, [classId]: { seats } };
+    }
+
+    const shuffled = shuffleSeats(seated);
+    const seatById = new Map(shuffled.map((s) => [s.id, s.seatIndex]));
+    const updatedStudents = get().students.map((s) =>
+      seatById.has(s.id) ? { ...s, seatIndex: seatById.get(s.id)!, groupColor: null } : s
+    );
+    const newSettings = { ...settings, seatingSnapshots };
+
+    set({ students: updatedStudents, settings: newSettings });
+    for (const s of shuffled) {
+      const student = updatedStudents.find((x) => x.id === s.id);
+      if (student) persist(store.upsertStudent(student));
+    }
+    if (newSettings.seatingSnapshots !== settings.seatingSnapshots) {
+      persist(store.saveSettings(newSettings));
+    }
+  },
+
+  createGroups(classId, groupSize) {
+    const seated = get()
+      .students.filter((s) => s.classId === classId && isPickableStudent(s))
+      .sort((a, b) => a.seatIndex! - b.seatIndex!);
+    if (seated.length === 0) return;
+
+    const settings = get().settings;
+    let seatingSnapshots = settings.seatingSnapshots;
+    if (!seatingSnapshots[classId]) {
+      const seats: Record<string, number> = {};
+      for (const s of seated) seats[s.id] = s.seatIndex!;
+      seatingSnapshots = { ...seatingSnapshots, [classId]: { seats } };
+    }
+
+    const layout = settings.seatLayout;
+    const seatOrder = spatialSweepOrder(placementForLayout(layout, seated.length), layout);
+    const assignments = planGroupSeating(
+      seated.map((s) => s.id),
+      seatOrder,
+      groupSize
+    );
+    const byStudentId = new Map(assignments.map((a) => [a.studentId, a]));
+
+    const updated: Student[] = [];
+    const updatedStudents = get().students.map((s) => {
+      const assignment = byStudentId.get(s.id);
+      if (!assignment) return s;
+      const next = { ...s, groupColor: assignment.groupColor, seatIndex: assignment.seatIndex };
+      updated.push(next);
+      return next;
+    });
+
+    const cls = get().classes.find((c) => c.id === classId);
+    const maxIndex = Math.max(...seatOrder);
+    const seatRows = Math.max(layout.rows, Math.ceil((maxIndex + 1) / layout.cols));
+    const updatedClass = cls ? { ...cls, seatCols: layout.cols, seatRows } : null;
+    const newSettings = { ...settings, seatingSnapshots };
+
+    set((state) => ({
+      students: updatedStudents,
+      classes: updatedClass
+        ? state.classes.map((c) => (c.id === classId ? updatedClass : c))
+        : state.classes,
+      settings: newSettings,
+    }));
+    updated.forEach((s) => persist(store.upsertStudent(s)));
+    if (updatedClass) persist(store.upsertClass(updatedClass));
+    if (newSettings.seatingSnapshots !== settings.seatingSnapshots) {
+      persist(store.saveSettings(newSettings));
+    }
+  },
+
+  restoreMainSeating(classId) {
+    const settings = get().settings;
+    const snapshot = settings.seatingSnapshots[classId];
+    if (!snapshot) return;
+
+    const classActiveStudents = get().students.filter((s) => s.classId === classId && s.active);
+    const restoreSeat = new Map<string, number>();
+    for (const student of classActiveStudents) {
+      const saved = snapshot.seats[student.id];
+      if (saved !== undefined) restoreSeat.set(student.id, saved);
+    }
+
+    // A student added (or re-seated) while the chart wasn't "default" might now be
+    // sitting on a desk a returning snapshot member needs back; only those
+    // students get relocated, to any desk nobody else ends up using.
+    const claimedSeats = new Set(restoreSeat.values());
+    const keptSeats = new Set<number>();
+    const displaced: Student[] = [];
+    for (const student of classActiveStudents) {
+      if (restoreSeat.has(student.id) || student.seatIndex == null) continue;
+      if (claimedSeats.has(student.seatIndex)) {
+        displaced.push(student);
+      } else {
+        keptSeats.add(student.seatIndex);
+      }
+    }
+
+    const layout = settings.seatLayout;
+    const usedSeats = new Set([...claimedSeats, ...keptSeats]);
+    const freeSeats = placementForLayout(
+      layout,
+      usedSeats.size + displaced.length + layout.seatOrder.length
+    ).filter((seat) => !usedSeats.has(seat));
+    const relocatedSeat = new Map(displaced.map((student, i) => [student.id, freeSeats[i]]));
+
+    const updated: Student[] = [];
+    const updatedStudents = get().students.map((s) => {
+      if (s.classId !== classId) return s;
+      const nextSeatIndex = restoreSeat.get(s.id) ?? relocatedSeat.get(s.id) ?? s.seatIndex;
+      if (nextSeatIndex === s.seatIndex && s.groupColor === null) return s;
+      const next = { ...s, seatIndex: nextSeatIndex, groupColor: null };
+      updated.push(next);
+      return next;
+    });
+
+    const remainingSnapshots = { ...settings.seatingSnapshots };
+    delete remainingSnapshots[classId];
+    const newSettings = { ...settings, seatingSnapshots: remainingSnapshots };
+
+    set({ students: updatedStudents, settings: newSettings });
+    persist(store.saveSettings(newSettings));
+    updated.forEach((s) => persist(store.upsertStudent(s)));
   },
 
   importData(data) {
