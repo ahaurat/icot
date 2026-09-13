@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SEAT_LAYOUT, DEFAULT_SEAT_ORDER } from "../constants/seatOrder";
 import {
   clearOrder,
-  contiguousSegments,
   deskCount,
   isAisleCell,
   normalizeSeatLayout,
   placementForLayout,
   planReseat,
   resizeLayout,
+  spatialSweepOrder,
   toggleDeskCell,
 } from "./seatLayout";
 import type { SeatLayout } from "../types";
@@ -94,30 +94,39 @@ describe("clearOrder", () => {
   });
 });
 
-describe("contiguousSegments", () => {
+describe("spatialSweepOrder", () => {
   it("returns an empty array for no desks", () => {
-    expect(contiguousSegments([], 6)).toEqual([]);
+    expect(spatialSweepOrder([], DEFAULT_SEAT_LAYOUT)).toEqual([]);
   });
 
-  it("keeps a single run together when every desk is grid-adjacent to the previous one", () => {
-    // Column C bottom-to-top: rows 5,4,3,2,1,0 at col 2 on a 6-col grid.
-    const column = [32, 26, 20, 14, 8, 2];
-    expect(contiguousSegments(column, 6)).toEqual([column]);
+  it("preserves the exact set of desk indices", () => {
+    const desks = [2, 3, 8, 9, 14, 15];
+    const layout: SeatLayout = { rows: 3, cols: 6, seatOrder: desks };
+    expect(spatialSweepOrder(desks, layout).sort((a, b) => a - b)).toEqual(
+      [...desks].sort((a, b) => a - b)
+    );
   });
 
-  it("splits at a jump from the top of one column to the bottom of the next", () => {
-    const columnCThenE = [32, 26, 20, 14, 8, 2, 33, 27, 21, 15, 9, 3];
-    const result = contiguousSegments(columnCThenE, 6);
-    expect(result).toEqual([
-      [32, 26, 20, 14, 8, 2],
-      [33, 27, 21, 15, 9, 3],
-    ]);
+  it("sweeps a dense two-column block in boustrophedon order", () => {
+    // Columns 2-3 across 4 rows on a 6-col grid.
+    const desks = [2, 3, 8, 9, 14, 15, 20, 21];
+    const layout: SeatLayout = { rows: 4, cols: 6, seatOrder: desks };
+    expect(spatialSweepOrder(desks, layout)).toEqual([2, 3, 9, 8, 14, 15, 21, 20]);
   });
 
-  it("matches DEFAULT_SEAT_ORDER's known column structure for its first 12 desks", () => {
+  it("keeps every consecutive pair grid-adjacent for DEFAULT_SEAT_ORDER's two-column demo class", () => {
     const firstTwelve = DEFAULT_SEAT_ORDER.slice(0, 12);
-    const result = contiguousSegments(firstTwelve, 6);
-    expect(result.map((s) => s.length)).toEqual([6, 6]);
+    const result = spatialSweepOrder(firstTwelve, DEFAULT_SEAT_LAYOUT);
+    for (let i = 1; i < result.length; i++) {
+      const prevRow = Math.floor(result[i - 1] / 6);
+      const prevCol = result[i - 1] % 6;
+      const row = Math.floor(result[i] / 6);
+      const col = result[i] % 6;
+      const adjacent =
+        (prevRow === row && Math.abs(prevCol - col) === 1) ||
+        (prevCol === col && Math.abs(prevRow - row) === 1);
+      expect(adjacent).toBe(true);
+    }
   });
 });
 

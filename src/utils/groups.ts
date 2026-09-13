@@ -30,3 +30,35 @@ export function buildGroups(studentIds: string[], targetSize: number): string[][
   shuffled.forEach((id, i) => groups[i % numGroups].push(id));
   return groups;
 }
+
+export interface GroupSeatAssignment {
+  studentId: string;
+  seatIndex: number;
+  groupColor: string;
+}
+
+/**
+ * Assign every student a seat and a group color: students are partitioned via
+ * `buildGroups`, then groups are laid onto consecutive slices of `seatOrder`.
+ * The caller must pass a `seatOrder` already arranged so any consecutive
+ * slice is a spatially adjacent run of desks (see `spatialSweepOrder` in
+ * seatLayout.ts) — this function only handles grouping + sequential
+ * assignment, not spatial reasoning.
+ */
+export function planGroupSeating(
+  studentIds: string[],
+  seatOrder: number[],
+  targetSize: number
+): GroupSeatAssignment[] {
+  const groups = buildGroups(studentIds, targetSize);
+  const assignments: GroupSeatAssignment[] = [];
+  let seatCursor = 0;
+  groups.forEach((group, i) => {
+    const groupColor = GROUP_COLOR_PALETTE[i % GROUP_COLOR_PALETTE.length];
+    for (const studentId of group) {
+      assignments.push({ studentId, seatIndex: seatOrder[seatCursor], groupColor });
+      seatCursor++;
+    }
+  });
+  return assignments;
+}

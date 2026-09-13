@@ -10,7 +10,7 @@ import type {
 } from "../types";
 import { CATEGORY_BY_KEY } from "../constants/categories";
 import { DEFAULT_SEAT_LAYOUT } from "../constants/seatOrder";
-import { contiguousSegments, normalizeSeatLayout, placementForLayout, planReseat } from "../utils/seatLayout";
+import { normalizeSeatLayout, placementForLayout, planReseat, spatialSweepOrder } from "../utils/seatLayout";
 import { buildSeedData } from "../data/seed";
 import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
@@ -19,7 +19,7 @@ import { elapsedSeconds, todayDateKey } from "../utils/time";
 import { isPickableStudent, pickStudent } from "../utils/randomPicker";
 import { shuffleSeats } from "../utils/seatRandomizer";
 import { sortByPeriod } from "../utils/classSort";
-import { buildGroups, GROUP_COLOR_PALETTE } from "../utils/groups";
+import { planGroupSeating } from "../utils/groups";
 
 /** The active class to default to: the lowest-period one, so period order (not storage order) wins. */
 function defaultActiveClassId(classes: ClassRoom[]): string | null {
@@ -491,7 +491,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const shuffled = shuffleSeats(seated);
     const seatById = new Map(shuffled.map((s) => [s.id, s.seatIndex]));
     const updatedStudents = get().students.map((s) =>
-      seatById.has(s.id) ? { ...s, seatIndex: seatById.get(s.id)! } : s
+      seatById.has(s.id) ? { ...s, seatIndex: seatById.get(s.id)!, groupColor: null } : s
     );
     const newSettings = { ...settings, seatingSnapshots };
 
@@ -515,16 +515,47 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const remainingSnapshots = { ...settings.seatingSnapshots };
     const changedStudents: Student[] = [];
+    const layout = get().settings.seatLayout;
 
     for (const classId of staleClassIds) {
       const snapshot = remainingSnapshots[classId];
       delete remainingSnapshots[classId];
-      for (const student of get().students) {
-        if (student.classId !== classId || !student.active) continue;
-        const savedSeatIndex = snapshot.seats[student.id];
-        if (savedSeatIndex === undefined || savedSeatIndex === student.seatIndex) continue;
-        changedStudents.push({ ...student, seatIndex: savedSeatIndex });
+
+      const classStudents = get().students.filter((s) => s.classId === classId && s.active);
+      const restoreSeat = new Map<string, number>();
+      for (const student of classStudents) {
+        const saved = snapshot.seats[student.id];
+        if (saved !== undefined) restoreSeat.set(student.id, saved);
       }
+
+      const claimedSeats = new Set(restoreSeat.values());
+      const keptSeats = new Set<number>();
+      const displaced: Student[] = [];
+      for (const student of classStudents) {
+        if (restoreSeat.has(student.id) || student.seatIndex == null) continue;
+        if (claimedSeats.has(student.seatIndex)) {
+          displaced.push(student);
+        } else {
+          keptSeats.add(student.seatIndex);
+        }
+      }
+
+      const usedSeats = new Set([...claimedSeats, ...keptSeats]);
+      const freeSeats = placementForLayout(
+        layout,
+        usedSeats.size + displaced.length + layout.seatOrder.length
+      ).filter((seat) => !usedSeats.has(seat));
+
+      for (const student of classStudents) {
+        const saved = restoreSeat.get(student.id);
+        if (saved !== undefined && saved !== student.seatIndex) {
+          changedStudents.push({ ...student, seatIndex: saved });
+        }
+      }
+      displaced.forEach((student, i) => {
+        const freeSeat = freeSeats[i];
+        if (freeSeat !== undefined) changedStudents.push({ ...student, seatIndex: freeSeat });
+      });
     }
 
     const newSettings = { ...settings, seatingSnapshots: remainingSnapshots };
@@ -543,51 +574,36 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (seated.length === 0) return;
 
     const layout = get().settings.seatLayout;
-    const targetSeats = placementForLayout(layout, seated.length);
-    const segments = contiguousSegments(targetSeats, layout.cols);
-
-    const shuffledIds = seated.map((s) => s.id);
-    for (let i = shuffledIds.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledIds[i], shuffledIds[j]] = [shuffledIds[j], shuffledIds[i]];
-    }
-
-    const colorByStudentId = new Map<string, string>();
-    const seatByStudentId = new Map<string, number>();
-    let studentCursor = 0;
-    let colorIndex = 0;
-
-    for (const segment of segments) {
-      const segmentStudentIds = shuffledIds.slice(studentCursor, studentCursor + segment.length);
-      studentCursor += segment.length;
-
-      const segmentGroups = buildGroups(segmentStudentIds, groupSize);
-      let seatCursor = 0;
-      for (const group of segmentGroups) {
-        const color = GROUP_COLOR_PALETTE[colorIndex % GROUP_COLOR_PALETTE.length];
-        colorIndex++;
-        for (const studentId of group) {
-          colorByStudentId.set(studentId, color);
-          seatByStudentId.set(studentId, segment[seatCursor]);
-          seatCursor++;
-        }
-      }
-    }
+    const seatOrder = spatialSweepOrder(placementForLayout(layout, seated.length), layout);
+    const assignments = planGroupSeating(
+      seated.map((s) => s.id),
+      seatOrder,
+      groupSize
+    );
+    const byStudentId = new Map(assignments.map((a) => [a.studentId, a]));
 
     const updated: Student[] = [];
     const updatedStudents = get().students.map((s) => {
-      if (!colorByStudentId.has(s.id)) return s;
-      const next = {
-        ...s,
-        groupColor: colorByStudentId.get(s.id)!,
-        seatIndex: seatByStudentId.get(s.id)!,
-      };
+      const assignment = byStudentId.get(s.id);
+      if (!assignment) return s;
+      const next = { ...s, groupColor: assignment.groupColor, seatIndex: assignment.seatIndex };
       updated.push(next);
       return next;
     });
 
-    set({ students: updatedStudents });
+    const cls = get().classes.find((c) => c.id === classId);
+    const maxIndex = Math.max(...seatOrder);
+    const seatRows = Math.max(layout.rows, Math.ceil((maxIndex + 1) / layout.cols));
+    const updatedClass = cls ? { ...cls, seatCols: layout.cols, seatRows } : null;
+
+    set((state) => ({
+      students: updatedStudents,
+      classes: updatedClass
+        ? state.classes.map((c) => (c.id === classId ? updatedClass : c))
+        : state.classes,
+    }));
     updated.forEach((s) => persist(store.upsertStudent(s)));
+    if (updatedClass) persist(store.upsertClass(updatedClass));
   },
 
   clearGroups(classId) {
