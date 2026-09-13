@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from "react";
 import type { CategoryConfig } from "../constants/categories";
 import { CATEGORIES, TIMED_CATEGORIES } from "../constants/categories";
+import type { CategoryKey } from "../types";
 import { useAppStore } from "../state/useAppStore";
 import { useStudentTotals } from "../hooks/useAggregates";
 import { formatDuration } from "../utils/time";
@@ -20,6 +22,16 @@ export default function StudentModal({
   const totals = useStudentTotals(studentId);
   const timedYear = TIMED_CATEGORIES.reduce((sum, c) => sum + totals[c.key].year, 0);
 
+  const [flashKey, setFlashKey] = useState<CategoryKey | null>(null);
+  const [flashNonce, setFlashNonce] = useState(0);
+  const flashTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimeout.current) clearTimeout(flashTimeout.current);
+    };
+  }, []);
+
   if (!student) {
     onClose();
     return null;
@@ -31,6 +43,10 @@ export default function StudentModal({
       onClose(); // timer now ticks on the seat
     } else {
       logCount(student!.id, cat.key); // tally; keep modal open to tap again
+      setFlashKey(cat.key);
+      setFlashNonce((n) => n + 1);
+      if (flashTimeout.current) clearTimeout(flashTimeout.current);
+      flashTimeout.current = setTimeout(() => setFlashKey(null), 400);
     }
   }
 
@@ -45,12 +61,19 @@ export default function StudentModal({
                 key={cat.key}
                 type="button"
                 onClick={() => handleCategory(cat)}
-                className="rounded px-3 py-2 text-sm font-medium text-white"
+                className="relative overflow-hidden rounded px-3 py-2 text-sm font-medium text-white"
                 style={{ backgroundColor: cat.color }}
                 title={cat.type === "timed" ? "Starts a timer" : "Adds one instance"}
               >
                 {cat.label}
                 {cat.type === "count" ? " +1" : ""}
+                {flashKey === cat.key && (
+                  <span
+                    key={flashNonce}
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded ring-4 ring-white animate-ping"
+                  />
+                )}
               </button>
             ))}
           </div>
