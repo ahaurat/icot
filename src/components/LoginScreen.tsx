@@ -96,13 +96,11 @@ export default function LoginScreen({ authError }: { authError?: string | null }
           <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
             In class. On task.
           </p>
-          <p className="mt-3 text-sm text-gray-500">
-            {isSignup
-              ? "Create your teacher account."
-              : isReset
-                ? "Reset your password."
-                : "Sign in to continue."}
-          </p>
+          {(isSignup || isReset) && (
+            <p className="mt-3 text-sm text-gray-500">
+              {isSignup ? "Create your teacher account." : "Reset your password."}
+            </p>
+          )}
         </div>
 
         {authError && isReset && (
