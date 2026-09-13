@@ -19,6 +19,7 @@ import { elapsedSeconds, todayDateKey } from "../utils/time";
 import { isPickableStudent, pickStudent } from "../utils/randomPicker";
 import { shuffleSeats } from "../utils/seatRandomizer";
 import { sortByPeriod } from "../utils/classSort";
+import { buildGroups, GROUP_COLOR_PALETTE } from "../utils/groups";
 
 /** The active class to default to: the lowest-period one, so period order (not storage order) wins. */
 function defaultActiveClassId(classes: ClassRoom[]): string | null {
@@ -84,6 +85,8 @@ interface AppState extends AppData {
   // Seat randomization
   randomizeSeats: (classId: string, persistMode: "save" | "today") => void;
   revertStaleSeatingSnapshots: () => void;
+  createGroups: (classId: string, groupSize: number) => void;
+  clearGroups: (classId: string) => void;
 }
 
 let initStarted = false;
@@ -531,6 +534,56 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     persist(store.saveSettings(newSettings));
     changedStudents.forEach((s) => persist(store.upsertStudent(s)));
+  },
+
+  createGroups(classId, groupSize) {
+    const seated = get()
+      .students.filter((s) => s.classId === classId && isPickableStudent(s))
+      .sort((a, b) => a.seatIndex! - b.seatIndex!);
+    if (seated.length === 0) return;
+
+    const groups = buildGroups(seated.map((s) => s.id), groupSize);
+    const layout = get().settings.seatLayout;
+    const seatOrder = placementForLayout(layout, seated.length);
+
+    const colorByStudentId = new Map<string, string>();
+    const seatByStudentId = new Map<string, number>();
+    let seatCursor = 0;
+    groups.forEach((group, i) => {
+      const color = GROUP_COLOR_PALETTE[i % GROUP_COLOR_PALETTE.length];
+      for (const studentId of group) {
+        colorByStudentId.set(studentId, color);
+        seatByStudentId.set(studentId, seatOrder[seatCursor]);
+        seatCursor++;
+      }
+    });
+
+    const updated: Student[] = [];
+    const updatedStudents = get().students.map((s) => {
+      if (!colorByStudentId.has(s.id)) return s;
+      const next = {
+        ...s,
+        groupColor: colorByStudentId.get(s.id)!,
+        seatIndex: seatByStudentId.get(s.id)!,
+      };
+      updated.push(next);
+      return next;
+    });
+
+    set({ students: updatedStudents });
+    updated.forEach((s) => persist(store.upsertStudent(s)));
+  },
+
+  clearGroups(classId) {
+    const updated: Student[] = [];
+    const updatedStudents = get().students.map((s) => {
+      if (s.classId !== classId || s.groupColor === null) return s;
+      const next = { ...s, groupColor: null };
+      updated.push(next);
+      return next;
+    });
+    set({ students: updatedStudents });
+    updated.forEach((s) => persist(store.upsertStudent(s)));
   },
 
   importData(data) {
