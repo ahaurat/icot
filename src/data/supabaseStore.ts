@@ -13,6 +13,7 @@ import type {
 import type { DataStore } from "./store";
 import { withSettingsDefaults } from "./store";
 import { getSupabaseClient } from "./supabaseClient";
+import { isNetworkError } from "../utils/networkError";
 
 // Row shapes (snake_case) as stored in Supabase. See supabase/schema.sql.
 interface ClassRow {
@@ -118,6 +119,21 @@ function check(error: { message: string } | null, context: string) {
   if (error) throw new Error(`Supabase ${context} failed: ${error.message}`);
 }
 
+const RETRY_DELAYS_MS = [500, 1500];
+
+/** Retries a Supabase call that failed at the network layer (dropped connection, backgrounded tab, etc). */
+async function withNetworkRetry<T extends { error: { message: string } | null }>(
+  fn: () => PromiseLike<T>
+): Promise<T> {
+  let result = await fn();
+  for (const delay of RETRY_DELAYS_MS) {
+    if (!result.error || !isNetworkError(result.error.message)) break;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    result = await fn();
+  }
+  return result;
+}
+
 /** Supabase-backed store. Active when VITE_SUPABASE_* env vars are set. */
 export function createSupabaseStore(): DataStore {
   const sb = getSupabaseClient();
@@ -203,17 +219,19 @@ export function createSupabaseStore(): DataStore {
 
     async saveSettings(s: Settings) {
       const owner_id = await ownerId();
-      const { error } = await sb.from("settings").upsert(
-        {
-          owner_id,
-          school_year_start: s.schoolYearStart,
-          seat_layout: s.seatLayout,
-          random_picker: s.randomPicker,
-          picker_progress: s.pickerProgress,
-          seating_snapshots: s.seatingSnapshots,
-          view_period: s.viewPeriod,
-        },
-        { onConflict: "owner_id" }
+      const { error } = await withNetworkRetry(() =>
+        sb.from("settings").upsert(
+          {
+            owner_id,
+            school_year_start: s.schoolYearStart,
+            seat_layout: s.seatLayout,
+            random_picker: s.randomPicker,
+            picker_progress: s.pickerProgress,
+            seating_snapshots: s.seatingSnapshots,
+            view_period: s.viewPeriod,
+          },
+          { onConflict: "owner_id" }
+        )
       );
       check(error, "save settings");
     },

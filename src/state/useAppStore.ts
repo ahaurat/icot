@@ -17,6 +17,7 @@ import type { ParsedRoster } from "../data/rosterImport";
 import { getDataStore, withSettingsDefaults } from "../data/store";
 import { migrateStudent, type LegacyStudent } from "../data/localStore";
 import { newId } from "../utils/id";
+import { isNetworkError, OFFLINE_MESSAGE } from "../utils/networkError";
 import { elapsedSeconds, todayDateKey } from "../utils/time";
 import { isPickableStudent, pickStudent } from "../utils/randomPicker";
 import { shuffleSeats } from "../utils/seatRandomizer";
@@ -34,7 +35,8 @@ const store = getDataStore();
 function persist(p: Promise<void>) {
   p.catch((err) => {
     console.error("Persistence error:", err);
-    useAppStore.setState({ error: err instanceof Error ? err.message : String(err) });
+    const message = isNetworkError(err) ? OFFLINE_MESSAGE : err instanceof Error ? err.message : String(err);
+    useAppStore.setState({ error: message });
   });
 }
 
